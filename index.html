@@ -173,7 +173,29 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 <script>
 const SCHOOL={ATPT:'P10',CODE:'8321090'};
 const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
-const PROXY='https://api.allorigins.win/get?url=';
+/* 여러 프록시를 순서대로 시도 */
+const PROXIES=[
+  url=>`https://api.allorigins.win/get?url=${url}`,
+  url=>`https://corsproxy.io/?${url}`,
+  url=>`https://api.codetabs.com/v1/proxy?quest=${url}`,
+];
+async function fetchWithProxy(neisUrl){
+  let lastErr;
+  for(const proxy of PROXIES){
+    try{
+      const res=await fetch(proxy(neisUrl),{signal:AbortSignal.timeout(8000)});
+      if(!res.ok) continue;
+      const o=await res.json();
+      /* allorigins / codetabs 는 .contents, corsproxy 는 직접 JSON */
+      const raw=o.contents!==undefined?o.contents:JSON.stringify(o);
+      const j=JSON.parse(raw);
+      if(j.mealServiceDietInfo) return j;
+      if(j.RESULT?.CODE==='INFO-000') return j;
+      lastErr=new Error('데이터 없음');
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr||new Error('모든 프록시 실패');
+}
 const AM={1:'난류',2:'우유',3:'메밀',4:'땅콩',5:'대두',6:'밀',7:'고등어',8:'게',9:'새우(김치)',10:'돼지고기',11:'복숭아',12:'토마토',13:'아황산류',14:'호두',15:'닭고기',16:'쇠고기',17:'오징어',18:'조개류'};
 const DRI={'탄수화물(g)':{rec:350,color:'#7eb8ff'},'단백질(g)':{rec:65,color:'#4fffb0'},'지방(g)':{rec:75,color:'#ffd60a'},'칼슘(mg)':{rec:900,color:'#ff9f43'},'철분(mg)':{rec:14,color:'#c77dff'},'비타민C(mg)':{rec:100,color:'#ff6b9d'}};
 const MC={'조식':'#ff9f43','중식':'#4fffb0','석식':'#7eb8ff'};
@@ -216,10 +238,8 @@ function cm(n){SM+=n;if(SM>12){SM=1;SY++;}if(SM<1){SM=12;SY--;}updMD();}
 function updMD(){document.getElementById('md').textContent=`${SY}년 ${String(SM).padStart(2,'0')}월`;}
 
 async function fetchRange(f,t){
-  const url=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=300&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${f}&MLSV_TO_YMD=${t}`);
-  const res=await fetch(`${PROXY}${url}`);
-  const o=await res.json();
-  const j=JSON.parse(o.contents);
+  const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=300&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${f}&MLSV_TO_YMD=${t}`);
+  const j=await fetchWithProxy(neisUrl);
   return j.mealServiceDietInfo?.[1]?.row||[];
 }
 
