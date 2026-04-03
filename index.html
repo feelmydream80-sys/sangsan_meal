@@ -173,28 +173,20 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 <script>
 const SCHOOL={ATPT:'P10',CODE:'8321090'};
 const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
-/* 여러 프록시를 순서대로 시도 */
-const PROXIES=[
-  url=>`https://api.allorigins.win/get?url=${url}`,
-  url=>`https://corsproxy.io/?${url}`,
-  url=>`https://api.codetabs.com/v1/proxy?quest=${url}`,
-];
+/* Vercel 서버리스 함수로 NEIS 직접 호출 (CORS 완전 해결) */
 async function fetchWithProxy(neisUrl){
-  let lastErr;
-  for(const proxy of PROXIES){
-    try{
-      const res=await fetch(proxy(neisUrl),{signal:AbortSignal.timeout(8000)});
-      if(!res.ok) continue;
-      const o=await res.json();
-      /* allorigins / codetabs 는 .contents, corsproxy 는 직접 JSON */
-      const raw=o.contents!==undefined?o.contents:JSON.stringify(o);
-      const j=JSON.parse(raw);
-      if(j.mealServiceDietInfo) return j;
-      if(j.RESULT?.CODE==='INFO-000') return j;
-      lastErr=new Error('데이터 없음');
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr||new Error('모든 프록시 실패');
+  /* neisUrl은 이미 encodeURIComponent된 상태 — 파라미터만 추출 */
+  const decoded = decodeURIComponent(neisUrl);
+  const qStart  = decoded.indexOf('?');
+  const params  = qStart > -1 ? decoded.slice(qStart + 1) : decoded;
+
+  const res = await fetch(`/api/meal?${params}`, {
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+  const j = await res.json();
+  if (j.error) throw new Error(j.error);
+  return j;
 }
 const AM={1:'난류',2:'우유',3:'메밀',4:'땅콩',5:'대두',6:'밀',7:'고등어',8:'게',9:'새우(김치)',10:'돼지고기',11:'복숭아',12:'토마토',13:'아황산류',14:'호두',15:'닭고기',16:'쇠고기',17:'오징어',18:'조개류'};
 const DRI={'탄수화물(g)':{rec:350,color:'#7eb8ff'},'단백질(g)':{rec:65,color:'#4fffb0'},'지방(g)':{rec:75,color:'#ffd60a'},'칼슘(mg)':{rec:900,color:'#ff9f43'},'철분(mg)':{rec:14,color:'#c77dff'},'비타민C(mg)':{rec:100,color:'#ff6b9d'}};
@@ -237,11 +229,28 @@ function cd(n){const c=new Date(document.getElementById('dp').value);c.setDate(c
 function cm(n){SM+=n;if(SM>12){SM=1;SY++;}if(SM<1){SM=12;SY--;}updMD();}
 function updMD(){document.getElementById('md').textContent=`${SY}년 ${String(SM).padStart(2,'0')}월`;}
 
+/* 주차별로 나눠서 요청 후 합치기 */
 async function fetchRange(f,t){
-  const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=300&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${f}&MLSV_TO_YMD=${t}`);
-  const j=await fetchWithProxy(neisUrl);
-  return j.mealServiceDietInfo?.[1]?.row||[];
+  const allRows=[];
+  /* 시작일~종료일을 7일 단위로 분할 */
+  const start=new Date(f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8));
+  const end  =new Date(t.slice(0,4)+'-'+t.slice(4,6)+'-'+t.slice(6,8));
+  let cur=new Date(start);
+  while(cur<=end){
+    const chunkFrom=fd2(cur);
+    const chunkEnd=new Date(cur); chunkEnd.setDate(chunkEnd.getDate()+6);
+    const chunkTo=fd2(chunkEnd>end?end:chunkEnd);
+    try{
+      const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`);
+      const j=await fetchWithProxy(neisUrl);
+      const rows=j.mealServiceDietInfo?.[1]?.row||[];
+      allRows.push(...rows);
+    }catch(e){ console.warn(`${chunkFrom}~${chunkTo} 실패:`,e.message); }
+    cur.setDate(cur.getDate()+7);
+  }
+  return allRows;
 }
+function fd2(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return`${y}${m}${dd}`;}
 
 function pNtr(s){const r={};(s||'').split('<br/>').forEach(x=>{const[k,v]=x.split(':').map(a=>a.trim());if(k&&v)r[k]=parseFloat(v)||0;});return r;}
 function pDish(s){return s.split('<br/>').filter(Boolean).map(d=>{const name=d.replace(/\s*\([\d\.]+\)/g,'').trim();const nums=(d.match(/\(([\d\.]+)\)/g)||[]).flatMap(m=>m.replace(/[()]/g,'').split('.').map(Number));return{name,nums};});}
