@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#070709">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="상산급식">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+<meta name="msapplication-TileColor" content="#070709">
+<title>상산고 급식 영양 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#070709;--surface:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);--text:#efefef;--muted:rgba(255,255,255,.4);--green:#4fffb0;--blue:#7eb8ff;--yellow:#ffd60a;--red:#ff6b6b;--orange:#ff9f43;--purple:#c77dff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(150px);opacity:.07;pointer-events:none;z-index:0;}
+#o1{width:500px;height:500px;top:-150px;left:-150px;background:var(--green);}
+#o2{width:400px;height:400px;bottom:-150px;right:-150px;background:var(--blue);}
+nav{position:sticky;top:0;z-index:100;background:rgba(7,7,9,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;}
+.nav-logo{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.2em;color:var(--muted);display:flex;align-items:center;gap:8px;}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.config-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.config-btn:hover{color:var(--text);}
+main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16px 80px;}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:4px;}
+.tab{flex:1;padding:10px 6px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.tab.on{background:rgba(255,255,255,.08);color:var(--text);}
+.date-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.date-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;}
+.date-btn:hover{color:var(--text);}
+.date-input{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;flex:1;outline:none;}
+.date-input:focus{border-color:var(--green);}
+.card{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+.card-shine{position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.meal-badge{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:4px 12px;border-radius:4px;border:1px solid;}
+.menu-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.menu-item{padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:12px;font-weight:300;}
+.menu-item.aw{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);color:var(--red);}
+.menu-item.aw::after{content:' ⚠️';}
+.ntr-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.ntr-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ntr-name{font-size:11px;color:var(--muted);width:60px;flex-shrink:0;}
+.ntr-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.ntr-bar{height:100%;border-radius:3px;}
+.ntr-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:80px;text-align:right;flex-shrink:0;}
+.month-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.month-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;}
+.month-btn:hover{color:var(--text);}
+.month-display{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:13px;}
+.load-btn{padding:10px 20px;border-radius:8px;background:var(--green);color:#000;border:none;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.load-btn:hover{filter:brightness(1.1);}
+.load-btn:disabled{opacity:.4;cursor:default;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px;}
+.stat-card{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.stat-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.stat-value{font-size:26px;font-weight:900;line-height:1;}
+.stat-unit{font-size:12px;font-weight:300;margin-left:3px;}
+.stat-sub{font-size:11px;color:var(--muted);font-weight:300;margin-top:6px;}
+.chart-card{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;}
+.chart-title{font-size:15px;font-weight:700;margin-bottom:4px;}
+.chart-sub{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:20px;}
+.chart-wrap{position:relative;height:240px;}
+.ntr-freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.freq-item{padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;}
+.freq-name{font-size:12px;font-weight:700;margin-bottom:6px;}
+.freq-bar-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.freq-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.freq-bar-fill{height:100%;border-radius:3px;}
+.freq-pct{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:36px;text-align:right;}
+.fbadge{display:inline-block;padding:2px 8px;border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;}
+.fover{background:rgba(255,107,107,.1);color:var(--red);border:1px solid rgba(255,107,107,.2);}
+.flow{background:rgba(255,159,67,.1);color:var(--orange);border:1px solid rgba(255,159,67,.2);}
+.fok{background:rgba(79,255,176,.1);color:var(--green);border:1px solid rgba(79,255,176,.2);}
+.exp-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.exp-name{font-size:12px;width:100px;flex-shrink:0;}
+.exp-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;}
+.exp-fill{height:100%;border-radius:4px;}
+.exp-count{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:50px;text-align:right;}
+.ai-card{background:rgba(10,10,14,.9);border:1px solid rgba(79,255,176,.15);border-radius:16px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+.ai-card::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(79,255,176,.3),transparent);}
+.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.ai-icon{width:32px;height:32px;border-radius:8px;background:rgba(79,255,176,.1);border:1px solid rgba(79,255,176,.2);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.ai-content{font-size:14px;line-height:1.8;font-weight:300;white-space:pre-wrap;}
+.ai-btn{margin-top:14px;padding:10px 20px;border-radius:8px;background:rgba(79,255,176,.1);border:1px solid rgba(79,255,176,.2);color:var(--green);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.ai-btn:hover{background:rgba(79,255,176,.18);}
+.ai-btn:disabled{opacity:.4;cursor:default;}
+.allergy-section{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;}
+.allergy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.allergy-chip{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;transition:all .2s;text-align:left;width:100%;}
+.allergy-chip.selected{border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.08);color:var(--red);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;}
+.modal{background:rgba(14,14,18,.98);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:460px;}
+.modal-title{font-size:20px;font-weight:900;margin-bottom:8px;}
+.modal-sub{font-size:13px;color:var(--muted);font-weight:300;margin-bottom:24px;line-height:1.6;}
+.modal-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.modal-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;margin-bottom:16px;outline:none;}
+.modal-input:focus{border-color:rgba(255,255,255,.2);}
+.modal-btn{width:100%;padding:14px;background:var(--green);color:#000;border:none;border-radius:10px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.15em;font-weight:700;cursor:pointer;text-transform:uppercase;}
+.modal-note{margin-top:12px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
+.loading-wrap{display:flex;align-items:center;justify-content:center;padding:60px;flex-direction:column;gap:16px;}
+.spinner{width:32px;height:32px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:14px;line-height:1.8;}
+@media(max-width:600px){.ntr-freq-grid{grid-template-columns:1fr;}.stat-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="grid"></div>
+<div class="orb" id="o1"></div>
+<div class="orb" id="o2"></div>
+
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">API 키 설정</div>
+    <div class="modal-sub">NEIS 개방포털 API 키와 AI 분석용 Claude API 키를 입력하세요.<br>키는 브라우저에만 저장됩니다.</div>
+    <div class="modal-label">NEIS API KEY *</div>
+    <input class="modal-input" id="ni" placeholder="NEIS API 키" type="password">
+    <div class="modal-label">Claude API KEY (AI 분석용 — 선택)</div>
+    <input class="modal-input" id="ci" placeholder="sk-ant-... (없으면 비워두세요)" type="password">
+    <button class="modal-btn" onclick="saveKeys()">저장하고 시작하기</button>
+    <div class="modal-note">API 키는 localStorage에만 저장됩니다.</div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-logo"><div class="nav-dot"></div>상산고 급식 분석</div>
+  <button class="config-btn" onclick="showModal()">⚙ 설정</button>
+</nav>
+
+<main>
+  <div class="tabs">
+    <button class="tab on" onclick="sw('today',this)">오늘 급식</button>
+    <button class="tab"    onclick="sw('stats',this)">월간 통계</button>
+    <button class="tab"    onclick="sw('allergy',this)">알레르기</button>
+  </div>
+
+  <div id="tab-today">
+    <div class="date-row">
+      <button class="date-btn" onclick="cd(-1)">← 전날</button>
+      <input class="date-input" type="date" id="dp" onchange="loadToday()">
+      <button class="date-btn" onclick="cd(1)">다음날 →</button>
+    </div>
+    <div id="today-box"><div class="loading-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <div id="tab-stats" style="display:none">
+    <div class="month-row">
+      <button class="month-btn" onclick="cm(-1)">← 이전달</button>
+      <div class="month-display" id="md"></div>
+      <button class="month-btn" onclick="cm(1)">다음달 →</button>
+      <button class="load-btn" id="slb" onclick="loadStats()">분석 시작</button>
+    </div>
+    <div id="stats-box"><div class="empty">월을 선택하고 "분석 시작"을 눌러주세요.</div></div>
+  </div>
+
+  <div id="tab-allergy" style="display:none">
+    <div class="allergy-section">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">내 알레르기 설정</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:300;margin-bottom:16px">선택하면 급식 메뉴에 경고 표시가 나타납니다</div>
+      <div class="allergy-grid" id="ag"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SCHOOL={ATPT:'P10',CODE:'8321090'};
+const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
+const PROXY='https://api.allorigins.win/get?url=';
+const AM={1:'난류',2:'우유',3:'메밀',4:'땅콩',5:'대두',6:'밀',7:'고등어',8:'게',9:'새우(김치)',10:'돼지고기',11:'복숭아',12:'토마토',13:'아황산류',14:'호두',15:'닭고기',16:'쇠고기',17:'오징어',18:'조개류'};
+const DRI={'탄수화물(g)':{rec:350,color:'#7eb8ff'},'단백질(g)':{rec:65,color:'#4fffb0'},'지방(g)':{rec:75,color:'#ffd60a'},'칼슘(mg)':{rec:900,color:'#ff9f43'},'철분(mg)':{rec:14,color:'#c77dff'},'비타민C(mg)':{rec:100,color:'#ff6b9d'}};
+const MC={'조식':'#ff9f43','중식':'#4fffb0','석식':'#7eb8ff'};
+const PALETTE=['#4fffb0','#7eb8ff','#ffd60a','#ff6b6b','#ff9f43','#c77dff','#ff6b9d','#48dbfb'];
+
+let NK='',CK='',MA=[],SY=2025,SM=4,CHARTS={};
+
+/* ── Service Worker 등록 ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(r=>console.log('SW 등록 완료:',r.scope))
+      .catch(e=>console.log('SW 등록 실패:',e));
+  });
+}
+
+window.onload=()=>{
+  NK=localStorage.getItem('neis_key')||'';
+  CK=localStorage.getItem('claude_key')||'';
+  MA=JSON.parse(localStorage.getItem('my_allergies')||'[]');
+  const t=new Date(); SY=t.getFullYear(); SM=t.getMonth()+1;
+  document.getElementById('dp').value=fd(t,'-');
+  updMD();
+  if(!NK){showModal();return;}
+  loadToday(); renderAG();
+};
+
+function showModal(){document.getElementById('ni').value=NK;document.getElementById('ci').value=CK;document.getElementById('modal').style.display='flex';}
+function saveKeys(){
+  const nk=document.getElementById('ni').value.trim(),ck=document.getElementById('ci').value.trim();
+  if(!nk){alert('NEIS API 키를 입력해주세요.');return;}
+  NK=nk;CK=ck;localStorage.setItem('neis_key',nk);localStorage.setItem('claude_key',ck);
+  document.getElementById('modal').style.display='none';
+  loadToday();renderAG();
+}
+
+function fd(d,s){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return s?`${y}${s}${m}${s}${dd}`:`${y}${m}${dd}`;}
+function cd(n){const c=new Date(document.getElementById('dp').value);c.setDate(c.getDate()+n);document.getElementById('dp').value=fd(c,'-');loadToday();}
+function cm(n){SM+=n;if(SM>12){SM=1;SY++;}if(SM<1){SM=12;SY--;}updMD();}
+function updMD(){document.getElementById('md').textContent=`${SY}년 ${String(SM).padStart(2,'0')}월`;}
+
+async function fetchRange(f,t){
+  const url=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=300&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${f}&MLSV_TO_YMD=${t}`);
+  const res=await fetch(`${PROXY}${url}`);
+  const o=await res.json();
+  const j=JSON.parse(o.contents);
+  return j.mealServiceDietInfo?.[1]?.row||[];
+}
+
+function pNtr(s){const r={};(s||'').split('<br/>').forEach(x=>{const[k,v]=x.split(':').map(a=>a.trim());if(k&&v)r[k]=parseFloat(v)||0;});return r;}
+function pDish(s){return s.split('<br/>').filter(Boolean).map(d=>{const name=d.replace(/\s*\([\d\.]+\)/g,'').trim();const nums=(d.match(/\(([\d\.]+)\)/g)||[]).flatMap(m=>m.replace(/[()]/g,'').split('.').map(Number));return{name,nums};});}
+function gCat(n){
+  if(/밥|죽|비빔|볶음밥/.test(n))return'밥류';if(/국|찌개|탕|스프/.test(n))return'국·찌개';
+  if(/김치|깍두기|나물|무침/.test(n))return'김치·나물';if(/고기|불고기|갈비|닭|돼지|소고기|육/.test(n))return'육류';
+  if(/생선|고등어|갈치|조기|새우|오징어/.test(n))return'어류·해산물';if(/빵|케이크|쿠키|도넛/.test(n))return'빵·과자';
+  if(/과일|사과|배|딸기|포도|귤|오렌지|수박|바나나|파인/.test(n))return'과일';if(/쥬스|우유|음료|차/.test(n))return'음료';
+  if(/샐러드|야채|채소/.test(n))return'채소·샐러드';if(/면|파스타|라면|우동/.test(n))return'면류';
+  if(/튀김|전|구이|볶음/.test(n))return'구이·튀김';return'기타';
+}
+
+/* ── 오늘 급식 ── */
+async function loadToday(){
+  const dv=document.getElementById('dp').value.replace(/-/g,'');
+  const box=document.getElementById('today-box');
+  box.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div style="color:var(--muted);font-size:13px">급식 정보를 불러오는 중...</div></div>';
+  try{
+    const rows=await fetchRange(dv,dv);
+    if(!rows.length){box.innerHTML='<div class="empty">📭 급식 정보가 없습니다.<br><span style="font-size:12px">주말이거나 방학일 수 있어요.</span></div>';return;}
+    box.innerHTML=rows.map(r=>{
+      const ac=MC[r.MMEAL_SC_NM]||'#fff';
+      const dishes=pDish(r.DDISH_NM);
+      const ntr=pNtr(r.NTR_INFO);
+      const mHTML=dishes.map(d=>`<span class="menu-item ${d.nums.some(n=>MA.includes(n))?'aw':''}">${d.name}</span>`).join('');
+      const nHTML=Object.entries(DRI).map(([k,i])=>{const v=ntr[k]||0,pct=Math.min(v/i.rec*100,100),rt=Math.round(v/i.rec*100),rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';return`<div class="ntr-row"><div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div><div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div><div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div></div>`;}).join('');
+      return`<div class="card"><div class="card-shine"></div><div class="card-header"><span class="meal-badge" style="color:${ac};border-color:${ac}33;background:${ac}0d">${r.MMEAL_SC_NM}</span><span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:${ac}">${r.CAL_INFO}</span></div><div class="menu-list">${mHTML}</div><div class="ntr-label">영양소 — 권장섭취량 대비 %</div>${nHTML}</div>`;
+    }).join('');
+  }catch(e){box.innerHTML=`<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`;}
+}
+
+/* ── 월간 통계 ── */
+async function loadStats(){
+  const btn=document.getElementById('slb');
+  btn.disabled=true;btn.textContent='분석 중...';
+  const box=document.getElementById('stats-box');
+  box.innerHTML=`<div class="loading-wrap"><div class="spinner"></div><div style="color:var(--muted);font-size:13px">${SY}년 ${SM}월 데이터 분석 중...</div></div>`;
+  const from=`${SY}${String(SM).padStart(2,'0')}01`;
+  const last=new Date(SY,SM,0).getDate();
+  const to=`${SY}${String(SM).padStart(2,'0')}${last}`;
+  try{
+    const rows=await fetchRange(from,to);
+    if(!rows.length){box.innerHTML='<div class="empty">📭 해당 월의 급식 정보가 없습니다.</div>';btn.disabled=false;btn.textContent='분석 시작';return;}
+
+    /* 집계 */
+    const byDate={};
+    rows.forEach(r=>{if(!byDate[r.MLSV_YMD])byDate[r.MLSV_YMD]=[];byDate[r.MLSV_YMD].push(r);});
+    const dates=Object.keys(byDate).sort();
+    const calByDate=dates.map(d=>({date:d,cal:byDate[d].reduce((s,r)=>s+parseFloat(r.CAL_INFO||0),0)}));
+    const avgCal=Math.round(calByDate.reduce((s,d)=>s+d.cal,0)/calByDate.length);
+    const ntrSums={},ntrOver={},ntrLow={};
+    Object.keys(DRI).forEach(k=>{ntrSums[k]=0;ntrOver[k]=0;ntrLow[k]=0;});
+    dates.forEach(d=>{
+      const dn={};Object.keys(DRI).forEach(k=>dn[k]=0);
+      byDate[d].forEach(r=>{const n=pNtr(r.NTR_INFO);Object.keys(DRI).forEach(k=>dn[k]+=(n[k]||0));});
+      Object.keys(DRI).forEach(k=>{ntrSums[k]+=dn[k];const r=dn[k]/DRI[k].rec;if(r>1.2)ntrOver[k]++;else if(r<0.7)ntrLow[k]++;});
+    });
+    const ntrAvgs={};Object.keys(DRI).forEach(k=>ntrAvgs[k]=Math.round(ntrSums[k]/dates.length));
+
+    /* 알레르기 */
+    const ac={};
+    rows.forEach(r=>pDish(r.DDISH_NM).forEach(d=>d.nums.forEach(n=>{ac[n]=(ac[n]||0)+1;})));
+
+    /* 메뉴 다양성 */
+    const menuSet=new Set();const catCount={};
+    rows.forEach(r=>pDish(r.DDISH_NM).forEach(d=>{menuSet.add(d.name);const c=gCat(d.name);catCount[c]=(catCount[c]||0)+1;}));
+
+    Object.values(CHARTS).forEach(c=>c.destroy());CHARTS={};
+
+    box.innerHTML=`
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">하루 평균 칼로리</div><div class="stat-value" style="color:var(--yellow)">${avgCal.toLocaleString()}<span class="stat-unit">Kcal</span></div><div class="stat-sub">분석 ${dates.length}일 / ${rows.length}끼</div></div>
+  <div class="stat-card"><div class="stat-label">등장 메뉴 종류</div><div class="stat-value" style="color:var(--green)">${menuSet.size}<span class="stat-unit">종</span></div><div class="stat-sub">이번 달 전체 급식 기준</div></div>
+  <div class="stat-card"><div class="stat-label">평균 단백질</div><div class="stat-value" style="color:var(--blue)">${ntrAvgs['단백질(g)']}<span class="stat-unit">g</span></div><div class="stat-sub">권장 대비 ${Math.round(ntrAvgs['단백질(g)']/DRI['단백질(g)'].rec*100)}%</div></div>
+  <div class="stat-card"><div class="stat-label">평균 칼슘</div><div class="stat-value" style="color:var(--orange)">${ntrAvgs['칼슘(mg)']}<span class="stat-unit">mg</span></div><div class="stat-sub">권장 대비 ${Math.round(ntrAvgs['칼슘(mg)']/DRI['칼슘(mg)'].rec*100)}%</div></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">📈 일별 칼로리 트렌드</div>
+  <div class="chart-sub">하루 총 칼로리(조식+중식+석식) — 점선: 고1 권장 2,600Kcal</div>
+  <div class="chart-wrap"><canvas id="cc"></canvas></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">⚖️ 영양소 부족·과잉 빈도</div>
+  <div class="chart-sub">이번 달 ${dates.length}일 중 권장량 70% 미만(부족) / 120% 초과(과잉) 일수</div>
+  <div class="chart-wrap"><canvas id="cn"></canvas></div>
+  <div class="ntr-freq-grid" id="nfd"></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">⚠️ 알레르기 식품 월간 노출 현황</div>
+  <div class="chart-sub">급식 메뉴에 등장한 알레르기 유발 식품 횟수 (상위 10개)</div>
+  <div id="ael"></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">🍱 메뉴 다양성 분석</div>
+  <div class="chart-sub">이번 달 급식 메뉴 카테고리 분포</div>
+  <div class="chart-wrap" style="height:280px"><canvas id="cd2"></canvas></div>
+</div>
+
+<div class="ai-card">
+  <div class="ai-header"><div class="ai-icon">✦</div><div><div style="font-size:14px;font-weight:700">AI 학부모 인사이트</div><div style="font-size:11px;color:var(--muted)">이번 달 급식 데이터 기반 맞춤 조언</div></div></div>
+  <div class="ai-content" id="aic" style="color:var(--muted);font-style:italic">${CK?'AI 분석 버튼을 눌러 학부모용 인사이트를 받아보세요.':'설정에서 Claude API 키를 입력하면 AI 분석을 사용할 수 있습니다.'}</div>
+  ${CK?'<button class="ai-btn" id="aib" onclick="getAI()">✦ AI 인사이트 받기</button>':''}
+</div>`;
+
+    /* Chart 1 — 칼로리 트렌드 */
+    CHARTS.cal=new Chart(document.getElementById('cc'),{type:'line',data:{labels:calByDate.map(d=>`${d.date.slice(6)}일`),datasets:[{label:'일별 칼로리',data:calByDate.map(d=>d.cal),borderColor:'#ffd60a',backgroundColor:'rgba(255,214,10,.08)',tension:.4,pointRadius:3,pointBackgroundColor:'#ffd60a',fill:true},{label:'권장 2600Kcal',data:calByDate.map(()=>2600),borderColor:'rgba(255,107,107,.4)',borderDash:[6,4],pointRadius:0,fill:false}]},options:cOpts()});
+
+    /* Chart 2 — 영양소 부족/과잉 */
+    const nk=Object.keys(DRI).map(k=>k.replace(/\(.*?\)/,''));
+    CHARTS.ntr=new Chart(document.getElementById('cn'),{type:'bar',data:{labels:nk,datasets:[{label:'과잉(>120%)',data:Object.keys(DRI).map(k=>ntrOver[k]),backgroundColor:'rgba(255,107,107,.6)',borderRadius:4},{label:'부족(<70%)',data:Object.keys(DRI).map(k=>ntrLow[k]),backgroundColor:'rgba(255,159,67,.6)',borderRadius:4}]},options:{...cOpts(),scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.05)'}},y:{stacked:true,max:dates.length,ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9},callback:v=>`${v}일`},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+    document.getElementById('nfd').innerHTML=Object.entries(DRI).map(([k,i])=>{const avg=ntrAvgs[k],rt=Math.round(avg/i.rec*100),ov=ntrOver[k],lw=ntrLow[k];const bc=rt>120?'fover':rt<70?'flow':'fok';const bt=rt>120?`과잉 ${ov}일`:rt<70?`부족 ${lw}일`:'양호';return`<div class="freq-item"><div class="freq-name">${k.replace(/\(.*?\)/,'')}</div><div class="freq-bar-row"><div class="freq-bar-wrap"><div class="freq-bar-fill" style="width:${Math.min(rt,100)}%;background:${i.color}"></div></div><div class="freq-pct">${rt}%</div></div><span class="fbadge ${bc}">${bt}</span></div>`;}).join('');
+
+    /* 알레르기 노출 리스트 */
+    const top=Object.entries(ac).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const mx=top[0]?.[1]||1;
+    document.getElementById('ael').innerHTML=top.map(([n,cnt])=>{const im=MA.includes(Number(n));return`<div class="exp-row"><div class="exp-name">${im?'⚠️ ':''}<span style="color:${im?'var(--red)':'var(--text)'}">${AM[n]||n+'번'}</span></div><div class="exp-bar-wrap"><div class="exp-fill" style="width:${cnt/mx*100}%;background:${im?'var(--red)':'rgba(255,255,255,.25)'}"></div></div><div class="exp-count">${cnt}회</div></div>`;}).join('');
+
+    /* Chart 4 — 다양성 도넛 */
+    const ce=Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    CHARTS.div=new Chart(document.getElementById('cd2'),{type:'doughnut',data:{labels:ce.map(e=>e[0]),datasets:[{data:ce.map(e=>e[1]),backgroundColor:PALETTE,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'rgba(255,255,255,.6)',font:{family:'Noto Sans KR',size:11},padding:12,boxWidth:14}},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed}회`}}},cutout:'65%'}});
+
+    window._AD={ntrAvgs,ntrOver,ntrLow,avgCal,dates,ac};
+  }catch(e){box.innerHTML=`<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`;}
+  btn.disabled=false;btn.textContent='분석 시작';
+}
+
+function cOpts(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'rgba(255,255,255,.6)',font:{family:'Noto Sans KR',size:11}}}},scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.05)'}}}};}
+
+async function getAI(){
+  const d=window._AD;if(!d)return;
+  const btn=document.getElementById('aib'),c=document.getElementById('aic');
+  btn.disabled=true;btn.textContent='분석 중...';
+  c.style.fontStyle='italic';c.style.color='var(--muted)';c.textContent='AI가 이번 달 급식 데이터를 분석하고 있습니다...';
+  const ns=Object.entries(DRI).map(([k,i])=>{const avg=d.ntrAvgs[k],rt=Math.round(avg/i.rec*100);return`${k.replace(/\(.*?\)/,'')}: 평균${avg}(권장${i.rec},${rt}%), 부족${d.ntrLow[k]}일, 과잉${d.ntrOver[k]}일`;}).join('\n');
+  const ta=Object.entries(d.ac).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,c])=>`${AM[n]||n+'번'}:${c}회`).join(',');
+  const prompt=`상산고등학교 이번 달 급식 영양 분석입니다.\n\n[영양소]\n${ns}\n[평균칼로리]${d.avgCal}Kcal(${d.dates.length}일)\n[자주 등장 알레르기]${ta}\n\n학부모에게 다음 3가지를 친근하게 알려주세요:\n1. 부족한 영양소와 집에서 보완할 구체적 식품(2~3가지)\n2. 주의할 영양 패턴\n3. 전반적 평가 한 줄 요약\n전문용어 없이 실천 가능한 조언으로.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CK,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,messages:[{role:'user',content:prompt}]})});
+    const j=await res.json();
+    const t=j.content?.[0]?.text||'분석 결과를 받지 못했습니다.';
+    c.style.fontStyle='normal';c.style.color='rgba(255,255,255,.8)';c.textContent=t;
+    btn.textContent='✓ 완료';
+  }catch(e){c.textContent='오류: '+e.message;btn.disabled=false;btn.textContent='✦ 다시 시도';}
+}
+
+function renderAG(){document.getElementById('ag').innerHTML=Object.entries(AM).map(([n,nm])=>`<button class="allergy-chip ${MA.includes(Number(n))?'selected':''}" onclick="tgA(${n},this)">${n}. ${nm}</button>`).join('');}
+function tgA(n,el){const i=MA.indexOf(n);if(i>-1)MA.splice(i,1);else MA.push(n);localStorage.setItem('my_allergies',JSON.stringify(MA));el.classList.toggle('selected');loadToday();}
+
+function sw(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');
+  ['today','stats','allergy'].forEach(t=>document.getElementById(`tab-${t}`).style.display=t===name?'block':'none');
+}
+</script>
+</body>
+</html>
