@@ -208,6 +208,9 @@ async function fetchWithProxy(neisUrl) {
 }
 const AM={1:'난류',2:'우유',3:'메밀',4:'땅콩',5:'대두',6:'밀',7:'고등어',8:'게',9:'새우(김치)',10:'돼지고기',11:'복숭아',12:'토마토',13:'아황산류',14:'호두',15:'닭고기',16:'쇠고기',17:'오징어',18:'조개류'};
 const DRI={'탄수화물(g)':{rec:350,color:'#7eb8ff'},'단백질(g)':{rec:65,color:'#4fffb0'},'지방(g)':{rec:75,color:'#ffd60a'},'칼슘(mg)':{rec:900,color:'#ff9f43'},'철분(mg)':{rec:14,color:'#c77dff'},'비타민C(mg)':{rec:100,color:'#ff6b9d'}};
+/* 조식만 뷔페식 — 1일 권장량의 35% 기준 적용, 중식·석식은 1일 권장량 전체 기준 */
+const MEAL_RATIO={'조식':0.35,'중식':1.0,'석식':1.0};
+function getMealRec(key, mealName){ return DRI[key].rec * (MEAL_RATIO[mealName]||1.0); }
 const MC={'조식':'#ff9f43','중식':'#4fffb0','석식':'#7eb8ff'};
 const PALETTE=['#4fffb0','#7eb8ff','#ffd60a','#ff6b6b','#ff9f43','#c77dff','#ff6b9d','#48dbfb'];
 
@@ -295,13 +298,61 @@ async function loadToday(){
   try{
     const rows=await fetchRange(dv,dv);
     if(!rows.length){box.innerHTML='<div class="empty">📭 급식 정보가 없습니다.<br><span style="font-size:12px">주말이거나 방학일 수 있어요.</span></div>';return;}
-    box.innerHTML=rows.map(r=>{
+    /* ── 일일 합산 요약 카드 ── */
+    const totalNtr={};
+    Object.keys(DRI).forEach(k=>totalNtr[k]=0);
+    let totalCal=0;
+    rows.forEach(r=>{
+      totalCal+=parseFloat(r.CAL_INFO)||0;
+      const n=pNtr(r.NTR_INFO);
+      Object.keys(DRI).forEach(k=>totalNtr[k]+=(n[k]||0));
+    });
+
+    const mealNames=rows.map(r=>r.MMEAL_SC_NM);
+    const hasBrk=mealNames.includes('조식');
+    const mealList=mealNames.join(' · ');
+
+    const summaryNtrHTML=Object.entries(DRI).map(([k,i])=>{
+      const v=Math.round(totalNtr[k]);
+      const pct=Math.min(v/i.rec*100,100);
+      const rt=Math.round(v/i.rec*100);
+      const rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';
+      return`<div class="ntr-row">
+        <div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div>
+        <div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div>
+        <div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div>
+      </div>`;
+    }).join('');
+
+    const calRatio=Math.round(totalCal/2600*100);
+    const calColor=calRatio>120?'#ff6b6b':calRatio<60?'#ff9f43':'#4fffb0';
+
+    const summaryCard=`<div class="card" style="border-color:rgba(255,255,255,.12);margin-bottom:20px">
+      <div class="card-shine"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:4px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6)">일일 합산</span>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">${mealList}</span>
+        </div>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${calColor}">${Math.round(totalCal).toLocaleString()} Kcal <span style="font-size:10px;font-weight:300">/ 2,600 권장</span></span>
+      </div>
+      ${hasBrk?`<div style="margin:10px 0 14px;padding:10px 14px;background:rgba(255,214,10,.06);border:1px solid rgba(255,214,10,.15);border-radius:8px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.7">
+        <span style="color:#ffd60a;font-weight:700">⚠️ 조식 안내</span> &nbsp;상산고 조식은 뷔페식으로 운영되어 1회 섭취량이 높게 집계됩니다.<br>
+        조식 영양소는 <strong style="color:#ffd60a">1일 권장량의 35%</strong>를 기준으로 계산하였습니다.
+      </div>`:''}
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">3끼 합산 — 1일 권장섭취량 대비 %</div>
+      ${summaryNtrHTML}
+    </div>`;
+
+    box.innerHTML = summaryCard + rows.map(r=>{
       const ac=MC[r.MMEAL_SC_NM]||'#fff';
       const dishes=pDish(r.DDISH_NM);
       const ntr=pNtr(r.NTR_INFO);
       const mHTML=dishes.map(d=>`<span class="menu-item ${d.nums.some(n=>MA.includes(n))?'aw':''}">${d.name}</span>`).join('');
-      const nHTML=Object.entries(DRI).map(([k,i])=>{const v=ntr[k]||0,pct=Math.min(v/i.rec*100,100),rt=Math.round(v/i.rec*100),rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';return`<div class="ntr-row"><div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div><div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div><div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div></div>`;}).join('');
-      return`<div class="card"><div class="card-shine"></div><div class="card-header"><span class="meal-badge" style="color:${ac};border-color:${ac}33;background:${ac}0d">${r.MMEAL_SC_NM}</span><span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:${ac}">${r.CAL_INFO}</span></div><div class="menu-list">${mHTML}</div><div class="ntr-label">영양소 — 권장섭취량 대비 %</div>${nHTML}</div>`;
+      const nHTML=Object.entries(DRI).map(([k,i])=>{const v=ntr[k]||0,rec=getMealRec(k,r.MMEAL_SC_NM),pct=Math.min(v/rec*100,100),rt=Math.round(v/rec*100),rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';return`<div class="ntr-row"><div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div><div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div><div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div></div>`;}).join('');
+      const isBreakfast=r.MMEAL_SC_NM==='조식';
+      const ntrLabelTxt=isBreakfast?'영양소 — 조식 기준 (1일 권장량의 35%)':'영양소 — 1일 권장량 대비 %';
+      return`<div class="card"><div class="card-shine"></div><div class="card-header"><span class="meal-badge" style="color:${ac};border-color:${ac}33;background:${ac}0d">${r.MMEAL_SC_NM}</span><span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:${ac}">${r.CAL_INFO}</span></div><div class="menu-list">${mHTML}</div><div class="ntr-label">${ntrLabelTxt}</div>${nHTML}</div>`;
     }).join('');
   }catch(e){box.innerHTML=`<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`;}
 }
