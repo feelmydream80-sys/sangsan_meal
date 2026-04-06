@@ -315,7 +315,15 @@ async function loadToday(){
     const mealList=mealNames.join(' · ');
 
     /* 조식 유무에 따른 합산 기준 라벨 */
-    const summaryLabel=hasBrk?'3끼 합산 — 1일 권장섭취량 대비 %':'중식+석식 합산 — 1일 권장섭취량 대비 %';
+    const mealCount=(hasBrk?1:0)+(hasLunch?1:0)+(hasDinner?1:0);
+    let summaryLabel;
+    if(hasBrk&&hasLunch&&hasDinner){
+      summaryLabel='조식+중식+석식 — 1일 권장섭취량 대비 %';
+    }else if(hasBrk){
+      summaryLabel='조식 35% 적용 + 중식/석식 — 1일 권장섭취량 대비 %';
+    }else{
+      summaryLabel='중식+석식 — 1일 권장섭취량 대비 %';
+    }
 
     const summaryNtrHTML=Object.entries(DRI).map(([k,i])=>{
       const v=Math.round(totalNtr[k]);
