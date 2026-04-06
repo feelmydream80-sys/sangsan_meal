@@ -177,15 +177,15 @@ const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
 /* CORS 프록시 — 응답 형식별로 파싱 처리 */
 const PROXIES = [
   {
-    url: u => `https://corsproxy.io/?${u}`,
-    parse: async r => await r.json()
-  },
-  {
     url: u => `https://api.allorigins.win/get?url=${u}`,
     parse: async r => { const o = await r.json(); return JSON.parse(o.contents); }
   },
   {
     url: u => `https://api.codetabs.com/v1/proxy?quest=${u}`,
+    parse: async r => await r.json()
+  },
+  {
+    url: u => `https://corsproxy.io/?${u}`,
     parse: async r => await r.json()
   },
 ];
