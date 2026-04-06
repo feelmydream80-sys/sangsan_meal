@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sangsan-meal-v1';
+const CACHE_NAME = 'sangsan-meal-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,25 +29,20 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  /* NEIS API / allorigins 프록시 → 네트워크 우선, 실패시 캐시 */
-  if (url.hostname.includes('neis.go.kr') || url.hostname.includes('allorigins.win') || url.hostname.includes('anthropic.com')) {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          /* NEIS 응답은 짧게 캐시 (30분) */
-          if (url.hostname.includes('allorigins.win')) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() => caches.match(e.request))
-    );
-    return;
-  }
+  /* 외부 API 요청은 SW가 절대 건드리지 않음 */
+  const isExternal =
+    url.hostname.includes('neis.go.kr') ||
+    url.hostname.includes('allorigins.win') ||
+    url.hostname.includes('corsproxy.io') ||
+    url.hostname.includes('codetabs.com') ||
+    url.hostname.includes('anthropic.com');
+
+  if (isExternal) return; /* SW 개입 없이 브라우저가 직접 처리 */
 
   /* 구글 폰트 / CDN → 캐시 우선 */
-  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('jsdelivr.net') || url.hostname.includes('fonts.gstatic.com')) {
+  if (url.hostname.includes('fonts.googleapis.com') ||
+      url.hostname.includes('jsdelivr.net') ||
+      url.hostname.includes('fonts.gstatic.com')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;
@@ -61,7 +56,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* 앱 셸 (HTML/JS/CSS) → 캐시 우선, 네트워크 폴백 */
+  /* 앱 셸 → 캐시 우선, 네트워크 폴백 */
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
