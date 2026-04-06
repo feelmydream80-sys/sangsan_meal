@@ -310,7 +310,12 @@ async function loadToday(){
 
     const mealNames=rows.map(r=>r.MMEAL_SC_NM);
     const hasBrk=mealNames.includes('조식');
+    const hasLunch=mealNames.includes('중식');
+    const hasDinner=mealNames.includes('석식');
     const mealList=mealNames.join(' · ');
+
+    /* 조식 유무에 따른 합산 기준 라벨 */
+    const summaryLabel=hasBrk?'3끼 합산 — 1일 권장섭취량 대비 %':'중식+석식 합산 — 1일 권장섭취량 대비 %';
 
     const summaryNtrHTML=Object.entries(DRI).map(([k,i])=>{
       const v=Math.round(totalNtr[k]);
@@ -340,7 +345,10 @@ async function loadToday(){
         <span style="color:#ffd60a;font-weight:700">⚠️ 조식 안내</span> &nbsp;상산고 조식은 뷔페식으로 운영되어 1회 섭취량이 높게 집계됩니다.<br>
         조식 영양소는 <strong style="color:#ffd60a">1일 권장량의 35%</strong>를 기준으로 계산하였습니다.
       </div>`:''}
-      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">3끼 합산 — 1일 권장섭취량 대비 %</div>
+      ${!hasBrk&&(hasLunch||hasDinner)?`<div style="margin:10px 0 14px;padding:10px 14px;background:rgba(79,255,176,.06);border:1px solid rgba(79,255,176,.15);border-radius:8px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.7">
+        <span style="color:#4fffb0;font-weight:700">✅ 중식·석식 기준</span> &nbsp;오늘은 조식이 없습니다. 중식과 석식 영양소는 <strong style="color:#4fffb0">1일 권장량 100%</strong>를 기준으로 계산됩니다.
+      </div>`:''}
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">${summaryLabel}</div>
       ${summaryNtrHTML}
     </div>`;
 
