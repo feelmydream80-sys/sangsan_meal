@@ -130,6 +130,8 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 .export-fab{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,255,176,.3);z-index:50;transition:transform .2s}
 .export-fab:hover{transform:scale(1.1)}
 .export-fab svg{width:20px;height:20px;fill:#000}
+#navSido,#navLevel,#navSchool{background:#fff;color:#000;font-size:10px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;max-width:100px}
+#navSido option,#navLevel option,#navSchool option{background:#fff;color:#000}
 </style>
 </head>
 <body>
@@ -297,7 +299,7 @@ async function loadMealCache(key){if(!db)await openDB();const tx=db.transaction(
 async function clearMealCache(){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).clear();return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
 function makeCacheKey(from,to,school){return`${school.ATPT}_${school.CODE}_${from}_${to}`;}
 function initNavSchoolSelect(){const s=document.getElementById('navSido');s.innerHTML='<option value="">시·도</option>'+SIDO_LIST.map(x=>`<option value="${x.code}">${x.name}</option>`).join('');}
-async function onNavSidoChange(){const sido=document.getElementById('navSido').value,lvl=document.getElementById('navLevel').value,sch=document.getElementById('navSchool');if(!sido){sch.innerHTML='<option value="">학교 선택</option>';return;}sch.innerHTML='<option value="">검색 중...</option>';try{const params=new URLSearchParams({KEY:NK,Type:'json',pIndex:1,pSize:100,ATPT_OFCDC_SC_CODE:sido,SCHUL_KIND_SC_NM:lvl||undefined});const neisUrl=encodeURIComponent(`https://open.neis.go.kr/hub/schoolInfo?${params}`);const j=await fetchWithProxy(neisUrl);const rows=j.schoolInfo?.[1]?.row||[];sch.innerHTML='<option value="">학교 선택</option>'+rows.map(r=>`<option value="${r.SD_SCHUL_CODE}" data-atpt="${sido}" data-name="${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('')}catch(e){sch.innerHTML='<option value="">오류</option>'}}
+async function onNavSidoChange(){const sido=document.getElementById('navSido').value,lvl=document.getElementById('navLevel').value,sch=document.getElementById('navSchool');if(!sido){sch.innerHTML='<option value="">학교 선택</option>';return;}sch.innerHTML='<option value="">검색 중...</option>';try{const url=`/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_KIND_SC_NM=${lvl||''}`;const res=await fetch(url);const j=await res.json();const rows=j.schoolInfo?.[1]?.row||[];if(rows.length===0){sch.innerHTML='<option value="">학교 없음</option>';return;}sch.innerHTML='<option value="">학교 선택</option>'+rows.map(r=>`<option value="${r.SD_SCHUL_CODE}" data-atpt="${sido}" data-name="${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('')}catch(e){console.error('학교 검색 실패:',e);sch.innerHTML='<option value="">오류</option>'}}
 function onNavLevelChange(){onNavSidoChange();}
 async function onNavSchoolChange(){const sch=document.getElementById('navSchool'),sel=sch.options[sch.selectedIndex];if(!sel.value)return;currentSchool={ATPT:sel.dataset.atpt,CODE:sel.value,NAME:sel.dataset.name};localStorage.setItem('selected_school',JSON.stringify(currentSchool));loadToday();}
 
@@ -365,9 +367,9 @@ async function loadSchoolList(){
   if(!sido){schoolSel.innerHTML='<option value="">시·도를 먼저 선택하세요</option>';return;}
   schoolSel.innerHTML='<option value="">검색 중...</option>';
   try{
-    const params=new URLSearchParams({KEY:NK,Type:'json',pIndex:1,pSize:100,ATPT_OFCDC_SC_CODE:sido,SCHUL_KIND_SC_NM:level||undefined});
-    const neisUrl=encodeURIComponent(`https://open.neis.go.kr/hub/schoolInfo?${params}`);
-    const j=await fetchWithProxy(neisUrl);
+    const url=`/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_KIND_SC_NM=${level||''}`;
+    const res=await fetch(url);
+    const j=await res.json();
     const rows=j.schoolInfo?.[1]?.row||[];
     if(rows.length===0){schoolSel.innerHTML='<option value="">학교를 찾을 수 없습니다</option>';return;}
     schoolSel.innerHTML='<option value="">학교를 선택하세요</option>'+rows.map(r=>`<option value="${r.SD_SCHUL_CODE}" data-name="${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('');
