@@ -114,6 +114,22 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 .sum-tab.on{background:rgba(79,255,176,.12);border-color:rgba(79,255,176,.3);color:var(--green);}
 .sum-tab:hover{color:var(--text);}
 @media(max-width:600px){.ntr-freq-grid{grid-template-columns:1fr;}.stat-grid{grid-template-columns:1fr 1fr;}}
+
+.school-select{margin-bottom:12px}
+.school-select label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px}
+.school-select select{width:100%;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;outline:none;cursor:pointer}
+.school-select select:focus{border-color:rgba(255,255,255,.2)}
+.current-school{padding:12px 16px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.2);border-radius:10px;margin-bottom:16px;font-size:12px;display:flex;align-items:center;justify-content:space-between}
+.current-school span{color:var(--green);font-weight:700}
+.school-btn{font-size:8px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace}
+.school-btn:hover{color:var(--text)}
+.school-panel{display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.school-panel.on{display:block}
+.import-btn{width:100%;margin-bottom:16px;padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.import-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.export-fab{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,255,176,.3);z-index:50;transition:transform .2s}
+.export-fab:hover{transform:scale(1.1)}
+.export-fab svg{width:20px;height:20px;fill:#000}
 </style>
 </head>
 <body>
@@ -123,14 +139,44 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 
 <div class="modal-overlay" id="modal" style="display:none">
   <div class="modal">
-    <div class="modal-title">API 키 설정</div>
-    <div class="modal-sub">NEIS 개방포털 API 키와 AI 분석용 Claude API 키를 입력하세요.<br>키는 브라우저에만 저장됩니다.</div>
+    <div class="modal-title">설정</div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+    <button class="import-btn" onclick="document.getElementById('importFile').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+      파일에서 급식 불러오기
+    </button>
     <div class="modal-label">NEIS API KEY *</div>
     <input class="modal-input" id="ni" placeholder="NEIS API 키" type="password">
     <div class="modal-label">Claude API KEY (AI 분석용 — 선택)</div>
     <input class="modal-input" id="ci" placeholder="sk-ant-... (없으면 비워두세요)" type="password">
-    <button class="modal-btn" onclick="saveKeys()">저장하고 시작하기</button>
-    <div class="modal-note">API 키는 localStorage에만 저장됩니다.</div>
+    <div class="current-school">
+      <span>현재 학교: <b id="currentSchoolName">상산고등학교</b></span>
+      <button class="school-btn" onclick="toggleSchoolPanel()">학교 변경</button>
+    </div>
+    <div class="school-panel" id="schoolPanel">
+      <div class="school-select">
+        <label>시·도 교육청</label>
+        <select id="sidoSelect" onchange="loadSchoolList()"></select>
+      </div>
+      <div class="school-select">
+        <label>학교급</label>
+        <select id="levelSelect" onchange="loadSchoolList()">
+          <option value="">전체</option>
+          <option value="초등학교">초등학교</option>
+          <option value="중학교">중학교</option>
+          <option value="고등학교">고등학교</option>
+        </select>
+      </div>
+      <div class="school-select">
+        <label>학교명</label>
+        <select id="schoolSelect"><option value="">시·도를 먼저 선택하세요</option></select>
+      </div>
+      <button class="modal-btn" style="margin-bottom:8px" onclick="applySchool()">학교 변경 적용</button>
+      <button style="width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer" onclick="toggleSchoolPanel()">취소</button>
+    </div>
+    <button class="modal-btn" id="saveBtn" onclick="saveKeys()">저장하고 시작하기</button>
+    <button style="width:100%;margin-top:8px;padding:10px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:10px;color:var(--red);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer" onclick="doClearCache()">🗑 캐시 지우기</button>
+    <div class="modal-note">API 키와 학교 정보는 localStorage에만 저장됩니다.</div>
   </div>
 </div>
 
@@ -161,6 +207,7 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
       <div class="month-display" id="md"></div>
       <button class="month-btn" onclick="cm(1)">다음달 →</button>
       <button class="load-btn" id="slb" onclick="loadStats()">분석 시작</button>
+      <button class="load-btn" id="mlb" onclick="exportMonthly()" style="display:none;background:var(--blue)">📥 내보내기</button>
     </div>
     <div id="stats-box"><div class="empty">월을 선택하고 "분석 시작"을 눌러주세요.</div></div>
   </div>
@@ -177,6 +224,16 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 <script>
 const SCHOOL={ATPT:'P10',CODE:'8321090'};
 const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
+const SIDO_LIST=[
+  {code:'P10',name:'서울특별시'},{code:'P11',name:'부산광역시'},{code:'P12',name:'대구광역시'},
+  {code:'P13',name:'인천광역시'},{code:'P14',name:'광주광역시'},{code:'P15',name:'대전광역시'},
+  {code:'P16',name:'울산광역시'},{code:'P17',name:'세종특별자치시'},{code:'P20',name:'경기도'},
+  {code:'P30',name:'강원도'},{code:'P40',name:'충청북도'},{code:'P50',name:'충청남도'},
+  {code:'P60',name:'전라북도'},{code:'P70',name:'전라남도'},{code:'P80',name:'경상북도'},
+  {code:'P90',name:'경상남도'},{code:'P100',name:'제주특별자치도'}
+];
+const DEFAULT_SCHOOL={ATPT:'P10',CODE:'8321090',NAME:'상산고등학교'};
+let currentSchool={...DEFAULT_SCHOOL};
 /* CORS 프록시 — 응답 형식별로 파싱 처리 */
 const PROXIES = [
   {
@@ -217,6 +274,15 @@ function getMealRec(key, mealName){ return DRI[key].rec * (MEAL_RATIO[mealName]|
 const MC={'조식':'#ff9f43','중식':'#4fffb0','석식':'#7eb8ff'};
 const PALETTE=['#4fffb0','#7eb8ff','#ffd60a','#ff6b6b','#ff9f43','#c77dff','#ff6b9d','#48dbfb'];
 
+/* ── IndexedDB 캐시 ── */
+let db=null;
+const DB_NAME='sangsan-meal-cache',DB_VERSION=1,STORE_NAME='meals';
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onerror=()=>reject(r.error);r.onsuccess=()=>{db=r.result;resolve(db);};r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_NAME)){d.createObjectStore(STORE_NAME,{keyPath:'id'});}};});}
+async function saveMealCache(key,data){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).put({id:key,data:data,time:Date.now()});return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
+async function loadMealCache(key){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readonly');const req=tx.objectStore(STORE_NAME).get(key);return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+async function clearMealCache(){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).clear();return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
+function makeCacheKey(from,to,school){return`${school.ATPT}_${school.CODE}_${from}_${to}`;}
+
 /* ── 기본 NEIS API 키 ── */
 const DEFAULT_NEIS_KEY = '35b75a10a2fe426b8aa1b072ab2be207';
 
@@ -231,27 +297,76 @@ if('serviceWorker' in navigator){
   });
 }
 
-window.onload=()=>{
-  /* 저장된 키 없으면 기본 키 자동 사용 & 저장 */
+window.onload=async ()=>{
   NK = localStorage.getItem('neis_key') || DEFAULT_NEIS_KEY;
   CK = localStorage.getItem('claude_key') || '';
   MA = JSON.parse(localStorage.getItem('my_allergies') || '[]');
+  const savedSchool=localStorage.getItem('selected_school');
+  if(savedSchool){currentSchool=JSON.parse(savedSchool);}
   if(!localStorage.getItem('neis_key')) localStorage.setItem('neis_key', NK);
-
+  await openDB();
+  
   const t=new Date(); SY=t.getFullYear(); SM=t.getMonth()+1;
   document.getElementById('dp').value=fd(t,'-');
   updMD();
-  /* 키 있으면 모달 없이 바로 시작 */
   loadToday(); renderAG();
 };
 
-function showModal(){document.getElementById('ni').value=NK;document.getElementById('ci').value=CK;document.getElementById('modal').style.display='flex';}
+function showModal(){
+  document.getElementById('ni').value=NK;
+  document.getElementById('ci').value=CK;
+  document.getElementById('currentSchoolName').textContent=currentSchool.NAME;
+  document.getElementById('modal').style.display='flex';
+}
 function saveKeys(){
   const nk=document.getElementById('ni').value.trim(),ck=document.getElementById('ci').value.trim();
   if(!nk){alert('NEIS API 키를 입력해주세요.');return;}
   NK=nk;CK=ck;localStorage.setItem('neis_key',nk);localStorage.setItem('claude_key',ck);
   document.getElementById('modal').style.display='none';
   loadToday();renderAG();
+}
+function toggleSchoolPanel(){
+  const panel=document.getElementById('schoolPanel');
+  const saveBtn=document.getElementById('saveBtn');
+  panel.classList.toggle('on');
+  if(panel.classList.contains('on')){
+    const sidoSel=document.getElementById('sidoSelect');
+    sidoSel.innerHTML='<option value="">시·도 선택</option>'+SIDO_LIST.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+    document.getElementById('levelSelect').value='';
+    document.getElementById('schoolSelect').innerHTML='<option value="">시·도를 먼저 선택하세요</option>';
+    saveBtn.style.display='none';
+  }else{
+    saveBtn.style.display='block';
+  }
+}
+async function loadSchoolList(){
+  const sido=document.getElementById('sidoSelect').value;
+  const level=document.getElementById('levelSelect').value;
+  const schoolSel=document.getElementById('schoolSelect');
+  if(!sido){schoolSel.innerHTML='<option value="">시·도를 먼저 선택하세요</option>';return;}
+  schoolSel.innerHTML='<option value="">검색 중...</option>';
+  try{
+    const params=new URLSearchParams({KEY:NK,Type:'json',pIndex:1,pSize:100,ATPT_OFCDC_SC_CODE:sido,SCHUL_KIND_SC_NM:level||undefined});
+    const neisUrl=encodeURIComponent(`https://open.neis.go.kr/hub/schoolInfo?${params}`);
+    const j=await fetchWithProxy(neisUrl);
+    const rows=j.schoolInfo?.[1]?.row||[];
+    if(rows.length===0){schoolSel.innerHTML='<option value="">학교를 찾을 수 없습니다</option>';return;}
+    schoolSel.innerHTML='<option value="">학교를 선택하세요</option>'+rows.map(r=>`<option value="${r.SD_SCHUL_CODE}" data-name="${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('');
+  }catch(e){schoolSel.innerHTML='<option value="">오류: 검색 실패</option>';}
+}
+function applySchool(){
+  const schoolSel=document.getElementById('schoolSelect');
+  const selected=schoolSel.options[schoolSel.selectedIndex];
+  if(!selected.value){alert('학교를 선택해주세요.');return;}
+  currentSchool={ATPT:document.getElementById('sidoSelect').value,CODE:selected.value,NAME:selected.dataset.name};
+  localStorage.setItem('selected_school',JSON.stringify(currentSchool));
+  document.getElementById('currentSchoolName').textContent=currentSchool.NAME;
+  toggleSchoolPanel();
+  loadToday();
+}
+async function doClearCache(){
+  if(!confirm('저장된 급식 캐시를 모두 삭제하시겠습니까?'))return;
+  try{await clearMealCache();alert('캐시가 삭제되었습니다.');}catch(e){alert('캐시 삭제 실패: '+e.message);}
 }
 
 function fd(d,s){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return s?`${y}${s}${m}${s}${dd}`:`${y}${m}${dd}`;}
@@ -261,22 +376,30 @@ function updMD(){document.getElementById('md').textContent=`${SY}년 ${String(SM
 
 /* 주차별로 나눠서 요청 후 합치기 */
 async function fetchRange(f,t){
+  const cacheKey=makeCacheKey(f,t,currentSchool);
+  try{
+    const cached=await loadMealCache(cacheKey);
+    if(cached&&cached.data){console.log('캐시 히트:',cacheKey);return cached.data;}
+  }catch(e){console.warn('캐시 로드 실패:',e.message);}
+  
   const allRows=[];
-  /* 시작일~종료일을 7일 단위로 분할 */
   const start=new Date(f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8));
-  const end  =new Date(t.slice(0,4)+'-'+t.slice(4,6)+'-'+t.slice(6,8));
+  const end  =new Date(t.slice(0,4)+'-'+t.slice(4,6)+'-'+f.slice(6,8));
   let cur=new Date(start);
   while(cur<=end){
     const chunkFrom=fd2(cur);
     const chunkEnd=new Date(cur); chunkEnd.setDate(chunkEnd.getDate()+6);
     const chunkTo=fd2(chunkEnd>end?end:chunkEnd);
     try{
-      const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${SCHOOL.ATPT}&SD_SCHUL_CODE=${SCHOOL.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`);
+      const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`);
       const j=await fetchWithProxy(neisUrl);
       const rows=j.mealServiceDietInfo?.[1]?.row||[];
       allRows.push(...rows);
     }catch(e){ console.warn(`${chunkFrom}~${chunkTo} 실패:`,e.message); }
     cur.setDate(cur.getDate()+7);
+  }
+  if(allRows.length>0){
+    try{await saveMealCache(cacheKey,allRows);console.log('캐시 저장:',cacheKey);}catch(e){console.warn('캐시 저장 실패:',e.message);}
   }
   return allRows;
 }
@@ -360,7 +483,10 @@ async function loadToday(){
           <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:4px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6)">일일 합산</span>
           <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">${mealList}</span>
         </div>
-        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${def.calColor}" id="sumCal">${Math.round(def.cal).toLocaleString()} Kcal <span style="font-size:10px;font-weight:300">/ 2,600 권장</span></span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="exportDaily()" style="padding:4px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Space Mono',monospace;font-size:8px;cursor:pointer">📥 내보내기</button>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${def.calColor}" id="sumCal">${Math.round(def.cal).toLocaleString()} Kcal <span style="font-size:10px;font-weight:300">/ 2,600 권장</span></span>
+        </div>
       </div>
       ${summaryTabs}
       <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px" id="sumLabel">${def.label}</div>
@@ -402,7 +528,7 @@ async function loadStats(){
   const to=`${SY}${String(SM).padStart(2,'0')}${last}`;
   try{
     const rows=await fetchRange(from,to);
-    if(!rows.length){box.innerHTML='<div class="empty">📭 해당 월의 급식 정보가 없습니다.</div>';btn.disabled=false;btn.textContent='분석 시작';return;}
+    if(!rows.length){box.innerHTML='<div class="empty">📭 해당 월의 급식 정보가 없습니다.</div>';document.getElementById('slb').style.display='inline-block';document.getElementById('mlb').style.display='none';return;}
 
     /* 집계 */
     const byDate={};
@@ -487,8 +613,11 @@ async function loadStats(){
     CHARTS.div=new Chart(document.getElementById('cd2'),{type:'doughnut',data:{labels:ce.map(e=>e[0]),datasets:[{data:ce.map(e=>e[1]),backgroundColor:PALETTE,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'rgba(255,255,255,.6)',font:{family:'Noto Sans KR',size:11},padding:12,boxWidth:14}},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed}회`}}},cutout:'65%'}});
 
     window._AD={ntrAvgs,ntrOver,ntrLow,avgCal,dates,ac};
+    document.getElementById('slb').style.display='none';
+    document.getElementById('mlb').style.display='inline-block';
   }catch(e){box.innerHTML=`<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`;}
-  btn.disabled=false;btn.textContent='분석 시작';
+  document.getElementById('slb').style.display='inline-block';
+  document.getElementById('mlb').style.display='none';
 }
 
 function cOpts(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'rgba(255,255,255,.6)',font:{family:'Noto Sans KR',size:11}}}},scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.05)'}}}};}
@@ -516,6 +645,119 @@ function tgA(n,el){const i=MA.indexOf(n);if(i>-1)MA.splice(i,1);else MA.push(n);
 function sw(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');
   ['today','stats','allergy'].forEach(t=>document.getElementById(`tab-${t}`).style.display=t===name?'block':'none');
+}
+
+function exportDaily(){
+  const data=window._sumData;
+  if(!data||!data.rows){alert('내보낼 데이터가 없습니다.');return;}
+  const exportObj={
+    exportDate:new Date().toISOString().split('T')[0],
+    school:currentSchool,
+    type:'daily',
+    date:document.getElementById('dp').value,
+    data:data.rows.map(r=>({
+      mealType:r.MMEAL_SC_NM,
+      calories:r.CAL_INFO,
+      menu:r.DDISH_NM.split('<br/>').filter(Boolean),
+      nutrients:pNtr(r.NTR_INFO)
+    }))
+  };
+  const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`급식_${document.getElementById('dp').value}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportMonthly(){
+  const d=window._AD;
+  if(!d){alert('먼저 월간 통계를 분석해주세요.');return;}
+  const exportObj={
+    exportDate:new Date().toISOString().split('T')[0],
+    school:currentSchool,
+    type:'monthly',
+    yearMonth:`${SY}-${String(SM).padStart(2,'0')}`,
+    summary:{avgCal:d.avgCal,totalDays:d.dates.length,totalMeals:d.dates.length*3},
+    nutrients:d.ntrAvgs,
+    nutrientStatus:{over:d.ntrOver,low:d.ntrLow},
+    allergyCount:d.ac
+  };
+  const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`급통계_${SY}-${String(SM).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function handleImport(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+    if(!data.type||!data.data){alert('유효하지 않은 파일 형식입니다.');return;}
+    if(data.type==='daily'){
+      renderImportedDaily(data);
+    }else if(data.type==='monthly'){
+      renderImportedMonthly(data);
+    }
+    alert('데이터를 성공적으로 불러왔습니다.');
+  }catch(e){alert('파일 읽기 오류: '+e.message);}
+  event.target.value='';
+}
+
+function renderImportedDaily(data){
+  const box=document.getElementById('today-box');
+  if(data.school){currentSchool=data.school;}
+  const rows=data.data.map(r=>({
+    MMEAL_SC_NM:r.mealType,
+    CAL_INFO:r.calories,
+    DDISH_NM:r.menu.join('<br/>'),
+    NTR_INFO:Object.entries(r.nutrients).map(([k,v])=>`${k}:${v}`).join('<br/>')
+  }));
+  const totalNtr={};
+  Object.keys(DRI).forEach(k=>totalNtr[k]=0);
+  let totalCal=0;
+  rows.forEach(r=>{totalCal+=parseFloat(r.CAL_INFO)||0;const n=pNtr(r.NTR_INFO);Object.keys(DRI).forEach(k=>totalNtr[k]+=(n[k]||0));});
+  const mealNames=rows.map(r=>r.MMEAL_SC_NM);
+  const hasBrk=mealNames.includes('조식');
+  const mealList=mealNames.join(' · ');
+  const calColor=totalCal>3120?'#ff6b6b':totalCal<1560?'#ff9f43':'#4fffb0';
+  const ntrHTML=Object.entries(DRI).map(([k,i])=>{const v=Math.round(totalNtr[k]),pct=Math.min(v/i.rec*100,100),rt=Math.round(v/i.rec*100),rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';return`<div class="ntr-row"><div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div><div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div><div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div></div>`;}).join('');
+  const summaryCard=`<div class="card" style="border-color:rgba(255,255,255,.12);margin-bottom:20px">
+    <div class="card-shine"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:4px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6)">📁 불러온 데이터</span>
+        <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">${mealList}</span>
+      </div>
+      <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${calColor}">${Math.round(totalCal).toLocaleString()} Kcal</span>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">${data.date} 일일 합산</div>
+    ${ntrHTML}
+  </div>`;
+  box.innerHTML=summaryCard+rows.map(r=>{const ac=MC[r.MMEAL_SC_NM]||'#fff';const dishes=pDish(r.DDISH_NM);const ntr=pNtr(r.NTR_INFO);const mHTML=dishes.map(d=>`<span class="menu-item ${d.nums.some(n=>MA.includes(n))?'aw':''}">${d.name}</span>`).join('');const nHTML=Object.entries(DRI).map(([k,i])=>{const v=ntr[k]||0,rec=getMealRec(k,r.MMEAL_SC_NM),pct=Math.min(v/rec*100,100),rt=Math.round(v/rec*100),rc=rt>120?'#ff6b6b':rt<60?'#ff9f43':'#4fffb0';return`<div class="ntr-row"><div class="ntr-name">${k.replace(/\(.*?\)/,'')}</div><div class="ntr-bar-wrap"><div class="ntr-bar" style="width:${pct}%;background:${i.color}"></div></div><div class="ntr-val">${v}<span style="color:${rc};margin-left:4px">${rt}%</span></div></div>`;}).join('');return`<div class="card"><div class="card-shine"></div><div class="card-header"><span class="meal-badge" style="color:${ac};border-color:${ac}33;background:${ac}0d">${r.MMEAL_SC_NM}</span><span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:${ac}">${r.CAL_INFO}</span></div><div class="menu-list">${mHTML}</div><div class="ntr-label">영양소</div>${nHTML}</div>`;}).join('');
+  document.getElementById('dp').value=data.date;
+}
+
+function renderImportedMonthly(data){
+  const box=document.getElementById('stats-box');
+  if(data.school){currentSchool=data.school;}
+  const s=data.summary,a=data.nutrients,os=data.nutrientStatus.over,ls=data.nutrientStatus.low;
+  const calColor=s.avgCal>3120?'#ff6b6b':s.avgCal<1560?'#ff9f43':'#4fffb0';
+  box.innerHTML=`<div style="margin-bottom:16px;padding:12px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.2);border-radius:10px;font-size:12px;color:var(--green)">📁 파일에서 불러온 데이터: ${data.yearMonth}</div>
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">하루 평균 칼로리</div><div class="stat-value" style="color:var(--yellow)">${s.avgCal.toLocaleString()}<span class="stat-unit">Kcal</span></div><div class="stat-sub">분석 ${s.totalDays}일</div></div>
+  <div class="stat-card"><div class="stat-label">평균 단백질</div><div class="stat-value" style="color:var(--blue)">${a['단백질(g)']}<span class="stat-unit">g</span></div><div class="stat-sub">권장 ${DRI['단백질(g)'].rec}g 기준</div></div>
+  <div class="stat-card"><div class="stat-label">평균 칼슘</div><div class="stat-value" style="color:var(--orange)">${a['칼슘(mg)']}<span class="stat-unit">mg</span></div><div class="stat-sub">권장 ${DRI['칼슘(mg)'].rec}mg 기준</div></div>
+  <div class="stat-card"><div class="stat-label">영양 상태</div><div class="stat-value" style="color:var(--green)">${Object.keys(os).length}<span class="stat-unit">종</span></div><div class="stat-sub">과잉 영양소</div></div>
+</div>
+<div class="ntr-freq-grid">${Object.entries(DRI).map(([k,i])=>{const avg=a[k],rt=Math.round(avg/i.rec*100),ov=os[k],lw=ls[k];const bc=rt>120?'fover':rt<70?'flow':'fok';const bt=rt>120?`과잉 ${ov}일`:rt<70?`부족 ${lw}일`:'양호';return`<div class="freq-item"><div class="freq-name">${k.replace(/\(.*?\)/,'')}</div><div class="freq-bar-row"><div class="freq-bar-wrap"><div class="freq-bar-fill" style="width:${Math.min(rt,100)}%;background:${i.color}"></div></div><div class="freq-pct">${rt}%</div></div><span class="fbadge ${bc}">${bt}</span></div>`;}).join('')}</div>`;
+  SY=parseInt(data.yearMonth.split('-')[0]);SM=parseInt(data.yearMonth.split('-')[1]);updMD();
 }
 </script>
 </body>
