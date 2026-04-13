@@ -182,6 +182,20 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 
 <nav>
   <div class="nav-logo"><div class="nav-dot"></div>상산고 급식 분석</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <select id="navSido" onchange="onNavSidoChange()" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px;border-radius:4px;cursor:pointer;max-width:90px">
+      <option value="">시·도</option>
+    </select>
+    <select id="navLevel" onchange="onNavLevelChange()" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px;border-radius:4px;cursor:pointer;max-width:70px">
+      <option value="">학교급</option>
+      <option value="초등학교">초</option>
+      <option value="중학교">중</option>
+      <option value="고등학교">고</option>
+    </select>
+    <select id="navSchool" onchange="onNavSchoolChange()" style="background:transparent;border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px;border-radius:4px;cursor:pointer;max-width:120px">
+      <option value="">학교 선택</option>
+    </select>
+  </div>
   <button class="config-btn" onclick="showModal()">⚙ 설정</button>
 </nav>
 
@@ -282,6 +296,10 @@ async function saveMealCache(key,data){if(!db)await openDB();const tx=db.transac
 async function loadMealCache(key){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readonly');const req=tx.objectStore(STORE_NAME).get(key);return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 async function clearMealCache(){if(!db)await openDB();const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).clear();return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
 function makeCacheKey(from,to,school){return`${school.ATPT}_${school.CODE}_${from}_${to}`;}
+function initNavSchoolSelect(){const s=document.getElementById('navSido');s.innerHTML='<option value="">시·도</option>'+SIDO_LIST.map(x=>`<option value="${x.code}">${x.name}</option>`).join('');}
+async function onNavSidoChange(){const sido=document.getElementById('navSido').value,lvl=document.getElementById('navLevel').value,sch=document.getElementById('navSchool');if(!sido){sch.innerHTML='<option value="">학교 선택</option>';return;}sch.innerHTML='<option value="">검색 중...</option>';try{const params=new URLSearchParams({KEY:NK,Type:'json',pIndex:1,pSize:100,ATPT_OFCDC_SC_CODE:sido,SCHUL_KIND_SC_NM:lvl||undefined});const neisUrl=encodeURIComponent(`https://open.neis.go.kr/hub/schoolInfo?${params}`);const j=await fetchWithProxy(neisUrl);const rows=j.schoolInfo?.[1]?.row||[];sch.innerHTML='<option value="">학교 선택</option>'+rows.map(r=>`<option value="${r.SD_SCHUL_CODE}" data-atpt="${sido}" data-name="${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('')}catch(e){sch.innerHTML='<option value="">오류</option>'}}
+function onNavLevelChange(){onNavSidoChange();}
+async function onNavSchoolChange(){const sch=document.getElementById('navSchool'),sel=sch.options[sch.selectedIndex];if(!sel.value)return;currentSchool={ATPT:sel.dataset.atpt,CODE:sel.value,NAME:sel.dataset.name};localStorage.setItem('selected_school',JSON.stringify(currentSchool));loadToday();}
 
 /* ── 기본 NEIS API 키 ── */
 const DEFAULT_NEIS_KEY = '35b75a10a2fe426b8aa1b072ab2be207';
@@ -305,6 +323,7 @@ window.onload=async ()=>{
   if(savedSchool){currentSchool=JSON.parse(savedSchool);}
   if(!localStorage.getItem('neis_key')) localStorage.setItem('neis_key', NK);
   await openDB();
+  initNavSchoolSelect();
   
   const t=new Date(); SY=t.getFullYear(); SM=t.getMonth()+1;
   document.getElementById('dp').value=fd(t,'-');
