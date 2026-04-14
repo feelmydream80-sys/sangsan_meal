@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     }
   });
   
-  if (type === 'school' || req.url.includes('schoolInfo')) {
+  if (type === 'school') {
     /* schoolInfo API */
     neisUrl = `https://open.neis.go.kr/hub/schoolInfo?${filteredParams.toString()}`;
   } else {
