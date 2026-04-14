@@ -1317,7 +1317,7 @@ async function searchSchoolsRealtime(context) {
   
   try {
     let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_NM=${encodeURIComponent(query)}`;
-    if (level) url += `&SCHUL_KIND_SC_NM=${encodeURIComponent(level)}`;
+    if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     
     const res = await fetch(url);
     const j = await res.json();
