@@ -130,7 +130,7 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 .export-fab{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,255,176,.3);z-index:50;transition:transform .2s}
 .export-fab:hover{transform:scale(1.1)}
 .export-fab svg{width:20px;height:20px;fill:#000}
-#navSido,#navLevel,#navSchool{background:#fff;color:#000;font-size:10px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;max-width:100px}
+#navSido,#navLevel,#navSchool{background:#fff;color:#000;font-size:10px;padding:4px 6px;border:1px solid #ccc;border-radius:4px}
 #navSido option,#navLevel option,#navSchool option{background:#fff;color:#000}
 </style>
 </head>
@@ -412,8 +412,9 @@ async function fetchRange(f,t){
     const chunkEnd=new Date(cur); chunkEnd.setDate(chunkEnd.getDate()+6);
     const chunkTo=fd2(chunkEnd>end?end:chunkEnd);
     try{
-      const neisUrl=encodeURIComponent(`${NEIS}?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`);
-      const j=await fetchWithProxy(neisUrl);
+      const url=`/api/meal?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
+      const res=await fetch(url);
+      const j=await res.json();
       const rows=j.mealServiceDietInfo?.[1]?.row||[];
       allRows.push(...rows);
     }catch(e){ console.warn(`${chunkFrom}~${chunkTo} 실패:`,e.message); }
