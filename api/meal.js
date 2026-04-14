@@ -11,24 +11,25 @@ export default async function handler(req, res) {
   /* 쿼리 파라미터 */
   const params = new URLSearchParams(req.query);
   
-  /* 빈 값이나 undefined인 파라미터 제거 */
-  params.forEach((value, key) => {
-    if (!value || value === 'undefined' || value === 'null' || value === '') {
-      params.delete(key);
-    }
-  });
-  
   /* schoolInfo 또는 mealServiceDietInfo 판단 */
   const type = params.get('type') || '';
   let neisUrl = '';
   
+  /* 빈 값 파라미터 제거 (forEach 대신 filter 사용) */
+  const filteredParams = new URLSearchParams();
+  params.forEach((value, key) => {
+    if (key === 'type') return; /* type은 NEIS로 전송하지 않음 */
+    if (value && value.trim() && value !== 'undefined' && value !== 'null') {
+      filteredParams.append(key, value);
+    }
+  });
+  
   if (type === 'school' || req.url.includes('schoolInfo')) {
     /* schoolInfo API */
-    params.delete('type');
-    neisUrl = `https://open.neis.go.kr/hub/schoolInfo?${params.toString()}`;
+    neisUrl = `https://open.neis.go.kr/hub/schoolInfo?${filteredParams.toString()}`;
   } else {
     /* mealServiceDietInfo API (기본) */
-    neisUrl = `https://open.neis.go.kr/hub/mealServiceDietInfo?${params.toString()}`;
+    neisUrl = `https://open.neis.go.kr/hub/mealServiceDietInfo?${filteredParams.toString()}`;
   }
 
   try {
