@@ -386,19 +386,27 @@ let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=10&ATPT_OFCD
     if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     
     console.log('학교 검색 URL:', url);
+    console.log('학교 검색 응답 상태:', res.status);
     
-    const res = await fetch(url);
     const j = await res.json();
+    console.log('학교 검색 응답:', j);
     
     /* 에러 응답 체크 */
     if (j.RESULT) {
       console.error('NEIS API 에러:', j.RESULT);
-      dropdownEl.innerHTML = `<div class="autocomplete-empty">오류: ${j.RESULT.MESSAGE || '알 수 없는 오류'}</div>`;
+      dropdownEl.innerHTML = `<div class="autocomplete-empty">${j.RESULT.MESSAGE || '검색 결과가 없습니다'}</div>`;
       dropdownEl.classList.add('on');
       return;
     }
     
-    const rows = j.schoolInfo?.[1]?.row || [];
+    /* schoolInfo 응답이 없는 경우 */
+    if (!j.schoolInfo) {
+      dropdownEl.innerHTML = '<div class="autocomplete-empty">검색 결과가 없습니다</div>';
+      dropdownEl.classList.add('on');
+      return;
+    }
+    
+    const rows = j.schoolInfo[1]?.row || [];
     console.log('검색 결과:', rows);
     
     if (rows.length === 0) {
@@ -1320,8 +1328,25 @@ async function searchSchoolsRealtime(context) {
     if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     
     const res = await fetch(url);
+    console.log('、学校 검색 응답 상태:', res.status);
     const j = await res.json();
-    const rows = j.schoolInfo?.[1]?.row || [];
+    console.log('학교 검색 응답:', j);
+    
+    /* 에러 응답 체크 */
+    if (j.RESULT) {
+      dropdownEl.innerHTML = `<div class="autocomplete-empty">${j.RESULT.MESSAGE || '검색 결과가 없습니다'}</div>`;
+      dropdownEl.classList.add('on');
+      return;
+    }
+    
+    /* schoolInfo 응답이 없는 경우 */
+    if (!j.schoolInfo) {
+      dropdownEl.innerHTML = '<div class="autocomplete-empty">검색 결과가 없습니다</div>';
+      dropdownEl.classList.add('on');
+      return;
+    }
+    
+    const rows = j.schoolInfo[1]?.row || [];
     
     if (rows.length === 0) {
       dropdownEl.innerHTML = '<div class="autocomplete-empty">검색 결과가 없습니다</div>';
