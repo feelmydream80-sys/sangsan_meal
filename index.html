@@ -1121,9 +1121,10 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
           <option value="고등학교">고등학교</option>
         </select>
       </div>
-      <div class="school-select">
-        <label>학교명</label>
-        <select id="schoolSelect" onchange="selectSchoolFromList()">
+<div class="school-select">
+        <label>학교명 (입력 없으면 전체 목록)</label>
+        <input type="text" id="schoolSearchInput" placeholder="학교명 입력 (공백=전체 목록)" autocomplete="off" oninput="filterSchoolList()" style="width:100%;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;outline:none;margin-bottom:8px">
+        <select id="schoolSelect" size="8" onchange="selectSchoolFromList()" style="width:100%;padding:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;max-height:200px;overflow-y:auto">
           <option value="">시·도와 학교급을 먼저 선택해주세요</option>
         </select>
         <div id="schoolListLoading" style="display:none;padding:8px;text-align:center;color:var(--muted);font-size:11px">학교 목록 로딩 중...</div>
@@ -1507,6 +1508,14 @@ async function loadSchoolList(){
     return;
   }
   
+  /* 캐시된 데이터가 있으면 재사용 */
+  const cacheKey = `schools_${sido}_${level}`;
+  if(window._schoolCache && window._schoolCache[cacheKey]){
+    window._schoolRows = window._schoolCache[cacheKey];
+    renderSchoolList(window._schoolRows);
+    return;
+  }
+  
   loading.style.display = 'block';
   schoolSelect.innerHTML = '<option value="">학교 목록 로딩 중...</option>';
   schoolSelect.disabled = true;
@@ -1533,15 +1542,42 @@ async function loadSchoolList(){
     /* 학교명 오름순 정렬 */
     rows.sort((a,b) => a.SCHUL_NM.localeCompare(b.SCHUL_NM, 'ko'));
     
-    schoolSelect.innerHTML = '<option value="">학교를 선택해주세요</option>' + 
-      rows.map(r => `<option value="${r.SD_SCHUL_CODE}|${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('');
+    /* 캐시 저장 */
+    if(!window._schoolCache) window._schoolCache = {};
+    window._schoolCache[cacheKey] = rows;
     
     window._schoolRows = rows;
+    renderSchoolList(rows);
   }catch(e){
     loading.style.display = 'none';
     schoolSelect.disabled = false;
     schoolSelect.innerHTML = '<option value="">오류: ' + e.message + '</option>';
   }
+}
+
+function renderSchoolList(rows){
+  const schoolSelect = document.getElementById('schoolSelect');
+  const searchInput = document.getElementById('schoolSearchInput');
+  const query = searchInput.value.trim().toLowerCase();
+  
+  /* 검색어로 필터링 */
+  let filtered = rows;
+  if(query){
+    filtered = rows.filter(r => r.SCHUL_NM.toLowerCase().includes(query));
+  }
+  
+  if(filtered.length === 0){
+    schoolSelect.innerHTML = query ? '<option value="">검색 결과 없음</option>' : '<option value="">학교가 없습니다</option>';
+    return;
+  }
+  
+  schoolSelect.innerHTML = '<option value="">학교를 선택해주세요</option>' + 
+    filtered.map(r => `<option value="${r.SD_SCHUL_CODE}|${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('');
+}
+
+function filterSchoolList(){
+  if(!window._schoolRows) return;
+  renderSchoolList(window._schoolRows);
 }
 
 function selectSchoolFromList(){
