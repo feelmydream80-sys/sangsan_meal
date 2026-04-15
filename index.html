@@ -1362,68 +1362,6 @@ function selectSchool(el, context) {
   }
 }
 
-function onNavSidoChange() {
-  const sido = document.getElementById('navSido').value;
-  const level = document.getElementById('navLevel').value;
-  const schoolSelect = document.getElementById('navSchoolSearch');
-  
-  if(!sido || !level){
-    schoolSelect.innerHTML = '<option value="">학교명</option>';
-    return;
-  }
-  loadNavSchoolList(sido, level, schoolSelect);
-}
-
-function onNavLevelChange() {
-  const sido = document.getElementById('navSido').value;
-  const level = document.getElementById('navLevel').value;
-  const schoolSelect = document.getElementById('navSchoolSearch');
-  
-  if(!sido || !level){
-    schoolSelect.innerHTML = '<option value="">학교명</option>';
-    return;
-  }
-  loadNavSchoolList(sido, level, schoolSelect);
-}
-
-async function loadNavSchoolList(sido, level, selectEl){
-  selectEl.innerHTML = '<option value="">로딩 중...</option>';
-  selectEl.disabled = true;
-  
-  try{
-    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=1000&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
-    const res = await fetch(url);
-    const j = await res.json();
-    
-    selectEl.disabled = false;
-    
-    const rows = j.schoolInfo?.[1]?.row || [];
-    if(rows.length === 0){
-      selectEl.innerHTML = '<option value="">학교 없음</option>';
-      return;
-    }
-    
-    rows.sort((a,b) => a.SCHUL_NM.localeCompare(b.SCHUL_NM, 'ko'));
-    
-    selectEl.innerHTML = '<option value="">학교 선택</option>' + 
-      rows.map(r => `<option value="${r.SD_SCHUL_CODE}|${r.SCHUL_NM}">${r.SCHUL_NM}</option>`).join('');
-  }catch(e){
-    selectEl.disabled = false;
-    selectEl.innerHTML = '<option value="">오류</option>';
-  }
-}
-
-function selectNavSchool(){
-  const schoolSelect = document.getElementById('navSchoolSearch');
-  const val = schoolSelect.value;
-  if(!val) return;
-  
-  const [code, name] = val.split('|');
-  currentSchool = { ATPT: document.getElementById('navSido').value, CODE: code, NAME: name };
-  localStorage.setItem('selected_school', JSON.stringify(currentSchool));
-  loadToday();
-}
-
 /* ── 기본 NEIS API 키 ── */
 const DEFAULT_NEIS_KEY = '35b75a10a2fe426b8aa1b072ab2be207';
 
