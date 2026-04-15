@@ -219,9 +219,9 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
       <option value="중학교">중</option>
       <option value="고등학교">고</option>
     </select>
-    <div class="school-search-wrap">
-      <input type="text" id="navSchoolSearch" class="school-search-input" placeholder="학교명 검색 (2글자+)" autocomplete="off">
-      
+<div class="school-search-wrap">
+      <input type="text" id="navSchoolSearch" class="school-search-input" placeholder="학교명 검색" autocomplete="off">
+      <div id="navAutocomplete" class="autocomplete-dropdown"></div>
     </div>
   </div>
   <button class="config-btn" onclick="showModal()">⚙ 설정</button>
@@ -363,7 +363,7 @@ async function searchSchoolsRealtime(context) {
     dropdownEl = document.getElementById('modalAutocompleteList');
   }
   
-  const query = inputEl.value.trim();
+const query = inputEl.value.trim();
   
   /* 시·도 선택 확인 */
   if (!sido) {
@@ -371,21 +371,22 @@ async function searchSchoolsRealtime(context) {
     dropdownEl.classList.add('on');
     return;
   }
-  
-  /* 최소 2글자 확인 */
-  if (query.length < 2) {
-    dropdownEl.classList.remove('on');
-    return;
-  }
-  
-  dropdownEl.innerHTML = '<div class="autocomplete-loading">검색 중...</div>';
+
+  dropdownEl.innerHTML = '<div class="autocomplete-loading">로딩 중...</div>';
   dropdownEl.classList.add('on');
-  
+
   try {
-let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_NM=${encodeURIComponent(query)}`;
+    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
+    
+    /* 검색어가 없으면 전체 목록, 있으면 검색 */
+    if (query.length >= 2) {
+      url += `&SCHUL_NM=${encodeURIComponent(query)}`;
+    }
     if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     
     console.log('학교 검색 URL:', url);
+    
+    const res = await fetch(url);
     console.log('학교 검색 응답 상태:', res.status);
     
     const j = await res.json();
@@ -407,7 +408,7 @@ let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=10&ATPT_OFCD
     }
     
     const rows = j.schoolInfo[1]?.row || [];
-    console.log('검색 결과:', rows);
+    console.log('검색 결과:', rows.length, '개');
     
     if (rows.length === 0) {
       dropdownEl.innerHTML = '<div class="autocomplete-empty">검색 결과가 없습니다</div>';
@@ -444,14 +445,20 @@ function selectSchool(el, context) {
 }
 
 function onNavSidoChange() {
-  /* 시·도 변경 시 검색창 초기화 */
   document.getElementById('navSchoolSearch').value = '';
   document.getElementById('navAutocomplete').classList.remove('on');
+  /* 시·도 변경 시 해당地区 전체 학교 목록 표시 */
+  const sido = document.getElementById('navSido').value;
+  if (sido) {
+    searchSchoolsRealtime('nav');
+  }
 }
 
 function onNavLevelChange() {
-  /* 학교급 변경 시에도 검색 가능하도록 유지, 다만 결과는 초기화 */
-  document.getElementById('navAutocomplete').classList.remove('on');
+  const sido = document.getElementById('navSido').value;
+  if (sido) {
+    searchSchoolsRealtime('nav');
+  }
 }
 
 /* ── 기본 NEIS API 키 ── */
