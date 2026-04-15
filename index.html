@@ -1296,17 +1296,15 @@ async function searchSchoolsRealtime(context) {
     return;
   }
   
-  /* 최소 2글자 확인 */
-  if (query.length < 2) {
-    dropdownEl.classList.remove('on');
-    return;
-  }
-  
-  dropdownEl.innerHTML = '<div class="autocomplete-loading">검색 중...</div>';
+  /* 검색어 없이도 전체 학교 목록 표시 */
+  dropdownEl.innerHTML = '<div class="autocomplete-loading">로딩 중...</div>';
   dropdownEl.classList.add('on');
   
   try {
-    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_NM=${encodeURIComponent(query)}`;
+    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
+    if (query.length > 0) {
+      url += `&SCHUL_NM=${encodeURIComponent(query)}`;
+    }
     if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     
     const res = await fetch(url);
