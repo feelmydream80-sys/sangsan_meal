@@ -191,8 +191,9 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
         </select>
       </div>
 <div class="school-select">
-        <label>학교명</label>
-        <select id="schoolSelect" onchange="selectSchoolFromList()">
+        <label>학교명 (입력 없으면 전체 목록)</label>
+        <input type="text" id="schoolSearchInput" placeholder="학교명 입력 (공백=전체 목록)" autocomplete="off" oninput="filterSchoolList()" style="width:100%;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;outline:none;margin-bottom:8px">
+        <select id="schoolSelect" size="8" onchange="selectSchoolFromList()" style="width:100%;padding:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;max-height:200px;overflow-y:auto">
           <option value="">시·도와 학교급을 먼저 선택해주세요</option>
         </select>
         <div id="schoolListLoading" style="display:none;padding:8px;text-align:center;color:var(--muted);font-size:11px">학교 목록 로딩 중...</div>
@@ -511,16 +512,10 @@ function toggleSchoolPanel(){
     sidoSel.innerHTML='<option value="">시·도 선택</option>'+SIDO_LIST.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
     document.getElementById('levelSelect').value='';
     document.getElementById('schoolSearchInput').value='';
-    document.getElementById('modalAutocompleteList').classList.remove('on');
+    document.getElementById('schoolSelect').innerHTML='<option value="">시·도와 학교급을 먼저 선택해주세요</option>';
     window._selectedSchool = null;
+    window._schoolRows = null;
     saveBtn.style.display='none';
-    
-    /* 모달 검색 이벤트 등록 (한 번만) */
-    if (!window._modalSearchInitialized) {
-      const input = document.getElementById('schoolSearchInput');
-      input.addEventListener('input', debounce(() => searchSchoolsRealtime('modal'), 300));
-      window._modalSearchInitialized = true;
-    }
   }else{
     saveBtn.style.display='block';
   }
@@ -1481,16 +1476,10 @@ function toggleSchoolPanel(){
     sidoSel.innerHTML='<option value="">시·도 선택</option>'+SIDO_LIST.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
     document.getElementById('levelSelect').value='';
     document.getElementById('schoolSearchInput').value='';
-    document.getElementById('modalAutocompleteList').classList.remove('on');
+    document.getElementById('schoolSelect').innerHTML='<option value="">시·도와 학교급을 먼저 선택해주세요</option>';
     window._selectedSchool = null;
+    window._schoolRows = null;
     saveBtn.style.display='none';
-    
-    /* 모달 검색 이벤트 등록 (한 번만) */
-    if (!window._modalSearchInitialized) {
-      const input = document.getElementById('schoolSearchInput');
-      input.addEventListener('input', debounce(() => searchSchoolsRealtime('modal'), 300));
-      window._modalSearchInitialized = true;
-    }
   }else{
     saveBtn.style.display='block';
   }
