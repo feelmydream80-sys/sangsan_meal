@@ -379,7 +379,7 @@ const query = inputEl.value.trim();
     let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
     
     /* 검색어가 없으면 전체 목록, 있으면 검색 */
-    if (query.length >= 2) {
+    if (query.length > 0) {
       url += `&SCHUL_NM=${encodeURIComponent(query)}`;
     }
     if (level) url += `&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
