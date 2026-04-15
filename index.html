@@ -376,7 +376,8 @@ const query = inputEl.value.trim();
   dropdownEl.classList.add('on');
 
   try {
-    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
+    const endpoint = 'schoolInfo';
+    let url = `https://open.neis.go.kr/hub/${endpoint}?KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
     
     /* 검색어가 없으면 전체 목록, 있으면 검색 */
     if (query.length > 0) {
@@ -1301,7 +1302,8 @@ async function searchSchoolsRealtime(context) {
   dropdownEl.classList.add('on');
   
   try {
-    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
+    const endpoint = 'schoolInfo';
+    let url = `https://open.neis.go.kr/hub/${endpoint}?KEY=${NK}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${sido}`;
     if (query.length > 0) {
       url += `&SCHUL_NM=${encodeURIComponent(query)}`;
     }
