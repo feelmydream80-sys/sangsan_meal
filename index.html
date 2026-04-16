@@ -1194,48 +1194,6 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 </main>
 
 <script>
-const SCHOOL={ATPT:'P10',CODE:'8321090'};
-const NEIS='https://open.neis.go.kr/hub/mealServiceDietInfo';
-const SIDO_LIST=[
-  {code:'B10',name:'서울특별시'},{code:'C10',name:'부산광역시'},{code:'D10',name:'대구광역시'},
-  {code:'E10',name:'인천광역시'},{code:'F10',name:'광주광역시'},{code:'G10',name:'대전광역시'},
-  {code:'H10',name:'울산광역시'},{code:'I10',name:'세종특별자치시'},{code:'J10',name:'경기도'},
-  {code:'K10',name:'강원도'},{code:'L10',name:'충청북도'},{code:'M10',name:'충청남도'},
-  {code:'N10',name:'전라북도'},{code:'O10',name:'전라남도'},{code:'P10',name:'전북특별자치도'},
-  {code:'Q10',name:'경상남도'},{code:'R10',name:'제주특별자치도'}
- ];
-const DEFAULT_SCHOOL={ATPT:'P10',CODE:'8321090',NAME:'전북상산고등학교'};
-let currentSchool={...DEFAULT_SCHOOL};
-/* CORS 프록시 — 응답 형식별로 파싱 처리 */
-const PROXIES = [
-  {
-    url: u => `https://api.allorigins.win/get?url=${u}`,
-    parse: async r => { const o = await r.json(); return JSON.parse(o.contents); }
-  },
-  {
-    url: u => `https://api.codetabs.com/v1/proxy?quest=${u}`,
-    parse: async r => await r.json()
-  },
-  {
-    url: u => `https://corsproxy.io/?${u}`,
-    parse: async r => await r.json()
-  },
-];
-
-async function fetchWithProxy(neisUrl) {
-  let lastErr;
-  for (const proxy of PROXIES) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      const res = await fetch(proxy.url(neisUrl), { signal: controller.signal });
-      clearTimeout(timer);
-      if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
-      const j = await proxy.parse(res);
-      if (j && (j.mealServiceDietInfo || j.RESULT)) return j;
-      lastErr = new Error('유효하지 않은 응답');
-    } catch(e) { lastErr = e; console.warn('프록시 실패:', e.message); }
-  }
   throw lastErr || new Error('모든 프록시 실패');
 }
 const AM={1:'난류',2:'우유',3:'메밀',4:'땅콩',5:'대두',6:'밀',7:'고등어',8:'게',9:'새우(김치)',10:'돼지고기',11:'복숭아',12:'토마토',13:'아황산류',14:'호두',15:'닭고기',16:'쇠고기',17:'오징어',18:'조개류'};
