@@ -468,7 +468,7 @@ async function loadStats() {
         <div class="chart-title">⚖️ 영양소 부족·과잉 빈도</div>
         <div class="chart-sub">${dates.length}일 중</div>
         <div class="ntr-freq-grid" id="nfd">${Object.entries(DRI).map(([k,i]) => {
-          const avg = ntrAvgs[k], rt = Math.round(avg/i.rec*100), ov = ntrOver[k], lw = ntrLow[k];
+          const avg = ntrAvgs[k], rt = Math.round(avg / i.rec * 100), ov = ntrOver[k], lw = ntrLow[k];
           const bc = rt > 120 ? 'fover' : rt < 70 ? 'flow' : 'fok';
           const bt = rt > 120 ? `과잉 ${ov}일` : rt < 70 ? `부족 ${lw}일` : '양호';
           return `<div class="freq-item"><div class="freq-name">${k.replace(/\(.*?\)/, '')}</div><div class="freq-bar-row"><div class="freq-bar-wrap"><div class="freq-bar-fill" style="width:${Math.min(rt,100)}%;background:${i.color}"></div></div><div class="freq-pct">${rt}%</div></div><span class="fbadge ${bc}">${bt}</span></div>`;
@@ -477,9 +477,10 @@ async function loadStats() {
       <div class="chart-card">
         <div class="chart-title">⚠️ 알레르기 식품 노출</div>
         <div class="chart-sub">급식 메뉴에 등장한 알레르기 유발 식품 횟수</div>
-        <div class="ntr-freq-grid" id="ael">${Object.entries(ac).sort((a,b) => b[1]-a[1]).slice(0,10).map(([n,cnt]) => {
+        <div class="ntr-freq-grid" id="ael">${Object.entries(ac).sort((a,b) => b[1] - a[1]).slice(0,10).map(([n,cnt]) => {
           const im = MA.includes(Number(n));
-          return `<div class="freq-item"><div class="freq-name">${im?'⚠️ ':''}${AM[n]||n+'번'}</div><div class="freq-bar-row"><div class="freq-bar-wrap"><div class="freq-bar-fill" style="width:${(cnt/(ac[Object.keys(ac)[0])*100)}%;background:var(--red)"></div></div><div class="freq-pct">${cnt}회</div></div></div>`;
+          const maxCnt = Object.values(ac)[0];
+          return `<div class="freq-item"><div class="freq-name">${im?'⚠️ ':''}${AM[n]||n+'번'}</div><div class="freq-bar-row"><div class="freq-bar-wrap"><div class="freq-bar-fill" style="width:${(cnt/maxCnt*100)}%;background:var(--red)"></div></div><div class="freq-pct">${cnt}회</div></div></div>`;
         }).join('')}</div>
       </div>
     `;
