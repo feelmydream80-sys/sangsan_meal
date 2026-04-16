@@ -453,6 +453,7 @@ function selectSchool(el, context) {
 
 function onNavSidoChange() {
   document.getElementById('navSchoolSearch').value = '';
+  document.getElementById('navAutocomplete').innerHTML = '';
   document.getElementById('navAutocomplete').classList.remove('on');
   
   const sido = document.getElementById('navSido').value;
@@ -463,6 +464,10 @@ function onNavSidoChange() {
 }
 
 function onNavLevelChange() {
+  document.getElementById('navSchoolSearch').value = '';
+  document.getElementById('navAutocomplete').innerHTML = '';
+  document.getElementById('navAutocomplete').classList.remove('on');
+  
   const sido = document.getElementById('navSido').value;
   const level = document.getElementById('navLevel').value;
   if (sido && level) {
