@@ -339,6 +339,12 @@ function initNavSchoolSelect() {
   const s = document.getElementById('navSido');
   s.innerHTML = '<option value="">시·도</option>' + SIDO_LIST.map(x => `<option value="${x.code}">${x.name}</option>`).join('');
   
+  /* 상산고등학교로 기본 설정 */
+  document.getElementById('navSido').value = 'P10';
+  document.getElementById('navLevel').value = '고등학교';
+  document.getElementById('navSchoolSearch').value = '상산고등학교';
+  searchSchoolsRealtime('nav');
+  
   /* 검색 입력 이벤트 등록 */
   const searchInput = document.getElementById('navSchoolSearch');
   searchInput.addEventListener('input', debounce(() => searchSchoolsRealtime('nav'), 300));
