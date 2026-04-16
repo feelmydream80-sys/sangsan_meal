@@ -571,7 +571,7 @@ async function fetchRange(f,t){
     const chunkEnd=new Date(cur); chunkEnd.setDate(chunkEnd.getDate()+6);
     const chunkTo=fd2(chunkEnd>end?end:chunkEnd);
     try{
-      const url=`/api/meal?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
+      const url=`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
       const res=await fetch(url);
       const j=await res.json();
       const rows=j.mealServiceDietInfo?.[1]?.row||[];
@@ -1457,7 +1457,7 @@ async function loadSchoolList(){
   schoolSelect.disabled = true;
   
   try{
-    let url = `/api/meal?type=school&KEY=${NK}&Type=json&pIndex=1&pSize=1000&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
+    let url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${NK}&Type=json&pIndex=1&pSize=1000&ATPT_OFCDC_SC_CODE=${sido}&SCHUL_KND_SC_NM=${encodeURIComponent(level)}`;
     const res = await fetch(url);
     const j = await res.json();
     
@@ -1563,7 +1563,7 @@ async function fetchRange(f,t){
     const chunkEnd=new Date(cur); chunkEnd.setDate(chunkEnd.getDate()+6);
     const chunkTo=fd2(chunkEnd>end?end:chunkEnd);
     try{
-      const url=`/api/meal?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
+const url=`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
       const res=await fetch(url);
       const j=await res.json();
       const rows=j.mealServiceDietInfo?.[1]?.row||[];
