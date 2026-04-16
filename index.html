@@ -448,16 +448,18 @@ function selectSchool(el, context) {
 function onNavSidoChange() {
   document.getElementById('navSchoolSearch').value = '';
   document.getElementById('navAutocomplete').classList.remove('on');
-  /* 시·도 변경 시 해당地区 전체 학교 목록 표시 */
+  
   const sido = document.getElementById('navSido').value;
-  if (sido) {
+  const level = document.getElementById('navLevel').value;
+  if (sido && level) {
     searchSchoolsRealtime('nav');
   }
 }
 
 function onNavLevelChange() {
   const sido = document.getElementById('navSido').value;
-  if (sido) {
+  const level = document.getElementById('navLevel').value;
+  if (sido && level) {
     searchSchoolsRealtime('nav');
   }
 }
