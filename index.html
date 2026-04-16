@@ -1221,9 +1221,9 @@ function debounce(fn, delay) {
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
 }
-
-/* ── 네비게이션 바 학교 선택 ── */
-function initNavSchoolSelect() {
+</script>
+</body>
+</html>
   const s = document.getElementById('navSido');
   s.innerHTML = '<option value="">시·도</option>' + SIDO_LIST.map(x => `<option value="${x.code}">${x.name}</option>`).join('');
 }
