@@ -1243,12 +1243,6 @@ function debounce(fn, delay) {
   };
 }
 
-/* ── 네비게이션 바 학교 선택 ── */
-function initNavSchoolSelect() {
-  const s = document.getElementById('navSido');
-  s.innerHTML = '<option value="">시·도</option>' + SIDO_LIST.map(x => `<option value="${x.code}">${x.name}</option>`).join('');
-}
-
 async function searchSchoolsRealtime(context) {
   let sido, level, inputEl, dropdownEl;
   
