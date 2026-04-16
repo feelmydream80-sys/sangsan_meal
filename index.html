@@ -1224,12 +1224,6 @@ function debounce(fn, delay) {
 </script>
 </body>
 </html>
-  const s = document.getElementById('navSido');
-  s.innerHTML = '<option value="">시·도</option>' + SIDO_LIST.map(x => `<option value="${x.code}">${x.name}</option>`).join('');
-}
-
-async function searchSchoolsRealtime(context) {
-  let sido, level, inputEl, dropdownEl;
   
   if (context === 'nav') {
     sido = document.getElementById('navSido').value;
