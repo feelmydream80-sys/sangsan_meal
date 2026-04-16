@@ -342,9 +342,15 @@ function initNavSchoolSelect() {
   /* 검색 입력 이벤트 등록 */
   const searchInput = document.getElementById('navSchoolSearch');
   searchInput.addEventListener('input', debounce(() => searchSchoolsRealtime('nav'), 300));
-  searchInput.addEventListener('focus', () => {
+searchInput.addEventListener('focus', () => {
     const dropdown = document.getElementById('navAutocomplete');
-    if (dropdown.children.length > 0) dropdown.classList.add('on');
+    const sido = document.getElementById('navSido').value;
+    const level = document.getElementById('navLevel').value;
+    if (sido && level) {
+      searchSchoolsRealtime('nav');
+    } else if (dropdown.children.length > 0) {
+      dropdown.classList.add('on');
+    }
   });
 }
 
