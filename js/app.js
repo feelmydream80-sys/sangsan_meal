@@ -12,9 +12,9 @@ const DEFAULT_SCHOOL = { ATPT: 'P10', CODE: '8321090', NAME: '상산고등학교
 let currentSchool = { ...DEFAULT_SCHOOL };
 
 const PROXIES = [
-  { url: u => `https://api.allorigins.win/get?url=${u}`, parse: async r => { const o = await r.json(); return JSON.parse(o.contents); } },
   { url: u => `https://api.codetabs.com/v1/proxy?quest=${u}`, parse: async r => await r.json() },
-  { url: u => `https://corsproxy.io/?${u}`, parse: async r => await r.json() }
+  { url: u => `https://corsproxy.io/?${u}`, parse: async r => await r.json() },
+  { url: u => `https://api.allorigins.win/get?url=${u}`, parse: async r => { const o = await r.json(); return JSON.parse(o.contents); } }
 ];
 
 async function fetchWithProxy(neisUrl) {
@@ -114,6 +114,12 @@ window.onload = async () => {
   const t = new Date(); SY = t.getFullYear(); SM = t.getMonth() + 1;
   document.getElementById('dp').value = fd(t, '-');
   updMD();
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelector('.tab').classList.add('on');
+  ['today', 'stats', 'allergy', 'report'].forEach(name => {
+    const el = document.getElementById('tab-' + name);
+    if (el) el.style.display = name === 'today' ? 'block' : 'none';
+  });
   loadToday(); renderAG();
 };
 
@@ -323,7 +329,7 @@ async function loadToday() {
 }
 
 async function loadStats() {
-  function resetBtn() { const btn = document.getElementById('slb'); if (btn) { btn.disabled = false; btn.textContent = '분석 시작'; } }
+  function resetBtn() { const btn = document.getElementById('slb'); if (btn) { btn.disabled = false; btn.textContent = '① 분석 시작'; } }
   const btn = document.getElementById('slb');
   btn.disabled = true; btn.textContent = '분석 중...';
   const box = document.getElementById('stats-box');
