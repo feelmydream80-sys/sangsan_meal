@@ -1,27 +1,25 @@
 {
   "version": 2,
   "name": "sangsan-meal",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/sw.js",
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
       "headers": {
         "Service-Worker-Allowed": "/",
         "Cache-Control": "no-cache"
       }
     },
     {
-      "src": "/manifest.json",
+      "source": "/manifest.json",
       "headers": {
         "Content-Type": "application/manifest+json"
       }
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ]
 }
