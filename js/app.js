@@ -441,17 +441,26 @@ async function loadStats() {
     });
 
     window._AD = { ntrAvgs, ntrOver, ntrLow, avgCal, dates, ac };
-    document.getElementById('slb').style.display = 'none';
-    document.getElementById('aiArrow').style.display = 'inline';
-    document.getElementById('exArrow').style.display = 'inline';
-    if (CK) document.getElementById('aib').style.display = 'inline-block';
-    document.getElementById('mlb').style.display = 'inline-block';
+    document.getElementById('slb').disabled = true;
+    document.getElementById('slb').style.opacity = '0.4';
+    document.getElementById('slb').textContent = '① 분석 완료';
+    document.getElementById('aib').disabled = false;
+    document.getElementById('aib').style.opacity = '1';
+    document.getElementById('aib').style.background = 'var(--green)';
+    document.getElementById('mlb').disabled = false;
+    document.getElementById('mlb').style.opacity = '1';
+    document.getElementById('mlb').style.background = 'var(--blue)';
   } catch (e) { box.innerHTML = `<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`; }
-  document.getElementById('slb').style.display = 'inline-block';
-  document.getElementById('aiArrow').style.display = 'none';
-  document.getElementById('exArrow').style.display = 'none';
-  document.getElementById('aib').style.display = 'none';
-  document.getElementById('mlb').style.display = 'none';
+  document.getElementById('slb').disabled = false;
+  document.getElementById('slb').style.opacity = '1';
+  document.getElementById('slb').textContent = '① 분석 시작';
+  document.getElementById('aib').disabled = true;
+  document.getElementById('aib').style.opacity = '0.4';
+  document.getElementById('aib').style.background = 'var(--surface)';
+  document.getElementById('aib').textContent = '② AI 인사이트 받기';
+  document.getElementById('mlb').disabled = true;
+  document.getElementById('mlb').style.opacity = '0.4';
+  document.getElementById('mlb').style.background = 'var(--surface)';
 }
 
 function cOpts() {
@@ -469,8 +478,7 @@ function cOpts() {
 async function getAI() {
   const d = window._AD; if (!d) return;
   const btn = document.getElementById('aib'), c = document.getElementById('aic');
-  btn.disabled = true; btn.textContent = 'AI 분석 중...';
-  btn.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'AI 분석 중...'; btn.style.background = 'var(--surface)';
   c.style.fontStyle = 'italic'; c.style.color = 'var(--muted)'; c.textContent = 'AI가 이번 달 급식 데이터를 분석하고 있습니다...';
   const ns = Object.entries(DRI).map(([k, i]) => {
     const avg = d.ntrAvgs[k], rt = Math.round(avg / i.rec * 100);
@@ -487,10 +495,9 @@ async function getAI() {
     const j = await res.json();
     const t = j.content?.[0]?.text || '분석 결과를 받지 못했습니다.';
     c.style.fontStyle = 'normal'; c.style.color = 'rgba(255,255,255,.8)'; c.textContent = t;
-    btn.textContent = '✓ 완료';
-    btn.style.display = 'inline-block';
+    btn.textContent = '② AI 완료';
     btn.disabled = true;
-  } catch (e) { c.textContent = '오류: ' + e.message; btn.disabled = false; btn.textContent = '✦ 다시 시도'; btn.style.display = 'inline-block'; }
+  } catch (e) { c.textContent = '오류: ' + e.message; btn.disabled = false; btn.textContent = '② 다시 시도'; btn.style.background = 'var(--green)'; }
 }
 
 function renderAG() {

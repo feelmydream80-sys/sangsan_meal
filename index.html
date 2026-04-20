@@ -113,10 +113,10 @@
       <button class="month-btn" onclick="cm(1)">다음달 →</button>
       <span class="flow-arrow">──→</span>
       <button class="load-btn step-btn" id="slb" data-step="①" onclick="loadStats()">① 분석 시작</button>
-      <span class="flow-arrow" id="aiArrow" style="display:none">──→</span>
-      <button class="load-btn step-btn" id="aib" data-step="②" onclick="getAI()" style="display:none;background:var(--green)">② AI 인사이트 받기</button>
-      <span class="flow-arrow" id="exArrow" style="display:none">──→</span>
-      <button class="load-btn step-btn" id="mlb" data-step="③" onclick="exportMonthly()" style="display:none;background:var(--blue)">③ 내보내기</button>
+      <span class="flow-arrow">──→</span>
+      <button class="load-btn step-btn" id="aib" data-step="②" onclick="getAI()" disabled style="opacity:0.4;background:var(--surface)">② AI 인사이트 받기</button>
+      <span class="flow-arrow">──→</span>
+      <button class="load-btn step-btn" id="mlb" data-step="③" onclick="exportMonthly()" disabled style="opacity:0.4;background:var(--surface)">③ 내보내기</button>
     </div>
     <div id="stats-box"><div class="empty">월을 선택하고 "① 분석 시작"을 눌러주세요.</div></div>
   </div>
