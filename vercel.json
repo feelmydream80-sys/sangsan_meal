@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "name": "sangsan-meal",
-  "rewrites": [
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+  "framework": null,
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": ".",
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
   ],
   "headers": [
     {
