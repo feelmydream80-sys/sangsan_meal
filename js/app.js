@@ -181,8 +181,7 @@ async function fetchRange(f, t) {
     const chunkTo = fd2(chunkEnd > end ? end : chunkEnd);
     try {
       const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
-      const res = await fetch(url);
-      const j = await res.json();
+      const j = await fetchWithProxy(url);
       const rows = j.mealServiceDietInfo?.[1]?.row || [];
       allRows.push(...rows);
     } catch (e) { console.warn(`${chunkFrom}~${chunkTo} 실패:`, e.message); }
@@ -324,6 +323,7 @@ async function loadToday() {
 }
 
 async function loadStats() {
+  function resetBtn() { const btn = document.getElementById('slb'); if (btn) { btn.disabled = false; btn.textContent = '분석 시작'; } }
   const btn = document.getElementById('slb');
   btn.disabled = true; btn.textContent = '분석 중...';
   const box = document.getElementById('stats-box');
@@ -333,8 +333,9 @@ async function loadStats() {
   const to = `${SY}${String(SM).padStart(2, '0')}${last}`;
   try {
     const rows = await fetchRange(from, to);
-    if (!rows.length) { box.innerHTML = '<div class="empty">📭 해당 월의 급식 정보가 없습니다.</div>'; document.getElementById('slb').style.display = 'inline-block'; document.getElementById('mlb').style.display = 'none'; return; }
-    const byDate = {};
+    if (!rows.length) { box.innerHTML = '<div class="empty">📭 해당 월의 급식 정보가 없습니다.</div>'; resetBtn(); return; }
+
+  const byDate = {};
     rows.forEach(r => { if (!byDate[r.MLSV_YMD]) byDate[r.MLSV_YMD] = []; byDate[r.MLSV_YMD].push(r); });
     const dates = Object.keys(byDate).sort();
     const calByDate = dates.map(d => ({ date: d, cal: byDate[d].reduce((s, r) => s + parseFloat(r.CAL_INFO || 0), 0) }));
@@ -450,10 +451,10 @@ async function loadStats() {
     document.getElementById('mlb').disabled = false;
     document.getElementById('mlb').style.opacity = '1';
     document.getElementById('mlb').style.background = 'var(--blue)';
-  } catch (e) { box.innerHTML = `<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`; }
+  } catch (e) { box.innerHTML = `<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`; resetBtn(); }
   document.getElementById('slb').disabled = false;
-  document.getElementById('slb').style.opacity = '1';
   document.getElementById('slb').textContent = '① 분석 시작';
+  document.getElementById('slb').style.opacity = '1';
   document.getElementById('aib').disabled = true;
   document.getElementById('aib').style.opacity = '0.4';
   document.getElementById('aib').style.background = 'var(--surface)';
