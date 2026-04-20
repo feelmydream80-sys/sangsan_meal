@@ -389,10 +389,9 @@ async function loadStats() {
   <div class="chart-wrap" style="height:280px"><canvas id="cd2"></canvas></div>
 </div>
 
-<div class="ai-card">
+<div class="ai-card" id="aiCardStats">
   <div class="ai-header"><div class="ai-icon">✦</div><div><div style="font-size:14px;font-weight:700">AI 학부모 인사이트</div><div style="font-size:11px;color:var(--muted)">이번 달 급식 데이터 기반 맞춤 조언</div></div></div>
   <div class="ai-content" id="aic" style="color:var(--muted);font-style:italic">${CK ? 'AI 분석 버튼을 눌러 학부모용 인사이트를 받아보세요.' : '설정에서 Claude API 키를 입력하면 AI 분석을 사용할 수 있습니다.'}</div>
-  ${CK ? '<button class="ai-btn" id="aib" onclick="getAI()">✦ AI 인사이트 받기</button>' : ''}
 </div>`;
 
     CHARTS.cal = new Chart(document.getElementById('cc'), {
@@ -443,9 +442,15 @@ async function loadStats() {
 
     window._AD = { ntrAvgs, ntrOver, ntrLow, avgCal, dates, ac };
     document.getElementById('slb').style.display = 'none';
+    document.getElementById('aiArrow').style.display = 'inline';
+    document.getElementById('exArrow').style.display = 'inline';
+    if (CK) document.getElementById('aib').style.display = 'inline-block';
     document.getElementById('mlb').style.display = 'inline-block';
   } catch (e) { box.innerHTML = `<div class="empty">⚠️ 데이터를 불러오지 못했습니다.<br><span style="font-size:12px">${e.message}</span></div>`; }
   document.getElementById('slb').style.display = 'inline-block';
+  document.getElementById('aiArrow').style.display = 'none';
+  document.getElementById('exArrow').style.display = 'none';
+  document.getElementById('aib').style.display = 'none';
   document.getElementById('mlb').style.display = 'none';
 }
 
@@ -464,7 +469,8 @@ function cOpts() {
 async function getAI() {
   const d = window._AD; if (!d) return;
   const btn = document.getElementById('aib'), c = document.getElementById('aic');
-  btn.disabled = true; btn.textContent = '분석 중...';
+  btn.disabled = true; btn.textContent = 'AI 분석 중...';
+  btn.style.display = 'none';
   c.style.fontStyle = 'italic'; c.style.color = 'var(--muted)'; c.textContent = 'AI가 이번 달 급식 데이터를 분석하고 있습니다...';
   const ns = Object.entries(DRI).map(([k, i]) => {
     const avg = d.ntrAvgs[k], rt = Math.round(avg / i.rec * 100);
@@ -482,7 +488,9 @@ async function getAI() {
     const t = j.content?.[0]?.text || '분석 결과를 받지 못했습니다.';
     c.style.fontStyle = 'normal'; c.style.color = 'rgba(255,255,255,.8)'; c.textContent = t;
     btn.textContent = '✓ 완료';
-  } catch (e) { c.textContent = '오류: ' + e.message; btn.disabled = false; btn.textContent = '✦ 다시 시도'; }
+    btn.style.display = 'inline-block';
+    btn.disabled = true;
+  } catch (e) { c.textContent = '오류: ' + e.message; btn.disabled = false; btn.textContent = '✦ 다시 시도'; btn.style.display = 'inline-block'; }
 }
 
 function renderAG() {

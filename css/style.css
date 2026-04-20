@@ -132,3 +132,7 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 #schoolSearchInput:focus{border-color:rgba(255,255,255,.2)}
 #modalAutocomplete{position:relative;width:100%;margin-bottom:16px}
 #modalAutocomplete .autocomplete-dropdown{position:relative;margin-top:0;max-height:150px}
+
+.flow-arrow{color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;margin:0 4px}
+.step-btn{position:relative}
+.step-btn::after{content:attr(data-step);position:absolute;top:-8px;right:4px;font-size:8px;font-family:'Space Mono',monospace;color:var(--muted)}
