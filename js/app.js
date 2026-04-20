@@ -181,17 +181,24 @@ async function fetchRange(f, t) {
   const start = new Date(f.slice(0, 4) + '-' + f.slice(4, 6) + '-' + f.slice(6, 8));
   const end = new Date(t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6, 8));
   let cur = new Date(start);
+  let attempt = 0;
   while (cur <= end) {
     const chunkFrom = fd2(cur);
-    const chunkEnd = new Date(cur); chunkEnd.setDate(chunkEnd.getDate() + 6);
+    const chunkEnd = new Date(cur); chunkEnd.setDate(chunkEnd.getDate() + 3);
     const chunkTo = fd2(chunkEnd > end ? end : chunkEnd);
-    try {
-      const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
-      const j = await fetchWithProxy(url);
-      const rows = j.mealServiceDietInfo?.[1]?.row || [];
-      allRows.push(...rows);
-    } catch (e) { console.warn(`${chunkFrom}~${chunkTo} 실패:`, e.message); }
-    cur.setDate(cur.getDate() + 7);
+    attempt++;
+    let success = false;
+    for (let retry = 0; retry < 3 && !success; retry++) {
+      try {
+        await new Promise(r => setTimeout(r, retry * 800));
+        const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${NK}&Type=json&pIndex=1&pSize=50&ATPT_OFCDC_SC_CODE=${currentSchool.ATPT}&SD_SCHUL_CODE=${currentSchool.CODE}&MLSV_FROM_YMD=${chunkFrom}&MLSV_TO_YMD=${chunkTo}`;
+        const j = await fetchWithProxy(url);
+        const rows = j.mealServiceDietInfo?.[1]?.row || [];
+        if (rows.length) { allRows.push(...rows); success = true; }
+        else { console.warn(`${chunkFrom}~${chunkTo} 응답 없음, 재시도 ${retry + 1}`); }
+      } catch (e) { console.warn(`${chunkFrom}~${chunkTo} 실패 (${retry + 1}/3):`, e.message); }
+    }
+    cur.setDate(cur.getDate() + 4);
   }
   if (allRows.length > 0) {
     try { await saveMealCache(cacheKey, allRows); console.log('캐시 저장:', cacheKey); } catch (e) { console.warn('캐시 저장 실패:', e.message); }
