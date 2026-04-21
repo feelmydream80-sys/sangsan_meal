@@ -156,7 +156,7 @@ async function doClearCache() {
 function fd(d, s) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0'); return s ? `${y}${s}${m}${s}${dd}` : `${y}${m}${dd}`; }
 function fd2(d) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0'); return `${y}${m}${dd}`; }
 function cd(n) { const c = new Date(document.getElementById('dp').value); c.setDate(c.getDate() + n); document.getElementById('dp').value = fd(c, '-'); loadToday(); }
-function cm(n) { SM += n; if (SM > 12) { SM = 1; SY++; } if (SM < 1) { SM = 12; SY--; } updMD(); document.querySelectorAll('.week-btn').forEach(b => { b.classList.remove('loaded'); b.textContent = b.id.replace('wb', '') + '주차'; }); document.getElementById('stats-box').innerHTML = '<div class="empty">버튼을 누르면 해당 주차 통계를 확인できます.</div>'; }
+function cm(n) { SM += n; if (SM > 12) { SM = 1; SY++; } if (SM < 1) { SM = 12; SY--; } updMD(); if (document.getElementById('tab-stats').style.display !== 'none') loadMonthlyStats(); }
 function updMD() { document.getElementById('md').textContent = `${SY}년 ${String(SM).padStart(2, '0')}월`; }
 
 function getWeekDates(sy, sm, weekNum) {
@@ -167,6 +167,74 @@ function getWeekDates(sy, sm, weekNum) {
   const from = `${sy}${String(sm).padStart(2, '0')}${String(startDay).padStart(2, '0')}`;
   const to = `${sy}${String(sm).padStart(2, '0')}${String(endDay).padStart(2, '0')}`;
   return { from, to, label: `${weekNum}주차 (${startDay}~${endDay}일)` };
+}
+
+async function loadMonthlyStats() {
+  const box = document.getElementById('stats-box');
+  box.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><div style="color:var(--muted);font-size:13px">월간 통계를 분석중...</div></div>';
+  
+  let allHtml = '';
+  for (let w = 1; w <= 5; w++) {
+    const { from, to, label } = getWeekDates(SY, SM, w);
+    try {
+      const rows = await fetchRange(from, to);
+      if (!rows.length) { allHtml += `<div class="week-card"><div class="week-card-header">${label}</div><div class="empty">급식 정보가 없습니다.</div></div>`; continue; }
+      const byDate = {};
+      rows.forEach(r => { if (!byDate[r.MLSV_YMD]) byDate[r.MLSV_YMD] = []; byDate[r.MLSV_YMD].push(r); });
+      const dates = Object.keys(byDate).sort();
+      const calByDate = dates.map(d => ({ date: d, cal: byDate[d].reduce((s, r) => s + parseFloat(r.CAL_INFO || 0), 0) }));
+      const avgCal = dates.length ? Math.round(calByDate.reduce((s, d) => s + d.cal, 0) / dates.length) : 0;
+      const ntrSums = {}, ntrOver = {}, ntrLow = {};
+      Object.keys(DRI).forEach(k => { ntrSums[k] = 0; ntrOver[k] = 0; ntrLow[k] = 0; });
+      dates.forEach(d => {
+        const dn = {}; Object.keys(DRI).forEach(k => dn[k] = 0);
+        byDate[d].forEach(r => { const n = pNtr(r.NTR_INFO); Object.keys(DRI).forEach(k => dn[k] += (n[k] || 0)); });
+        Object.keys(DRI).forEach(k => { ntrSums[k] += dn[k]; const r = dn[k] / DRI[k].rec; if (r > 1.2) ntrOver[k]++; else if (r < 0.7) ntrLow[k]++; });
+      });
+      const ntrAvgs = {}; Object.keys(DRI).forEach(k => ntrAvgs[k] = Math.round(ntrSums[k] / dates.length));
+      const ac = {};
+      rows.forEach(r => pDish(r.DDISH_NM).forEach(d => d.nums.forEach(n => { ac[n] = (ac[n] || 0) + 1; })));
+      const menuSet = new Set();
+      rows.forEach(r => pDish(r.DDISH_NM).forEach(d => menuSet.add(d.name)));
+      allHtml += `<div class="week-card" id="week-card-${w}">
+        <div class="week-card-header">${label}</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">평균 칼로리</div><div class="stat-value" style="color:var(--yellow)">${avgCal.toLocaleString()}<span class="stat-unit">Kcal</span></div><div class="stat-sub">${dates.length}일 / ${rows.length}끼</div></div>
+          <div class="stat-card"><div class="stat-label">메뉴 종류</div><div class="stat-value" style="color:var(--green)">${menuSet.size}<span class="stat-unit">종</span></div></div>
+          <div class="stat-card"><div class="stat-label">평균 단백질</div><div class="stat-value" style="color:var(--blue)">${ntrAvgs['단백질(g)'] || 0}<span class="stat-unit">g</span></div><div class="stat-sub">권장 ${Math.round((ntrAvgs['단백질(g)'] || 0) / DRI['단백질(g)'].rec * 100)}%</div></div>
+          <div class="stat-card"><div class="stat-label">평균 칼슘</div><div class="stat-value" style="color:var(--orange)">${ntrAvgs['칼슘(mg)'] || 0}<span class="stat-unit">mg</span></div><div class="stat-sub">권장 ${Math.round((ntrAvgs['칼슘(mg)'] || 0) / DRI['칼슘(mg)'].rec * 100)}%</div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">📈 일별 칼로리 트렌드</div>
+          <div class="chart-wrap"><canvas id="wc${w}"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">⚠️ 알레르기 식품 노출</div>
+          <div id="wael${w}"></div>
+        </div>
+      </div>`;
+      setTimeout(() => {
+        new Chart(document.getElementById(`wc${w}`), {
+          type: 'line',
+          data: {
+            labels: calByDate.map(d => `${d.date.slice(6)}일`),
+            datasets: [
+              { label: '일별 칼로리', data: calByDate.map(d => d.cal), borderColor: '#ffd60a', backgroundColor: 'rgba(255,214,10,.08)', tension: .4, pointRadius: 3, pointBackgroundColor: '#ffd60a', fill: true },
+              { label: '권장 2600Kcal', data: calByDate.map(() => 2600), borderColor: 'rgba(255,107,107,.4)', borderDash: [6, 4], pointRadius: 0, fill: false }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,.4)', font: { family: 'Space Mono', size: 9 } }, grid: { color: 'rgba(255,255,255,.05)' } }, y: { ticks: { color: 'rgba(255,255,255,.4)', font: { family: 'Space Mono', size: 9 } }, grid: { color: 'rgba(255,255,255,.05)' } } } }
+        });
+        const top = Object.entries(ac).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        const mx = top[0]?.[1] || 1;
+        document.getElementById(`wael${w}`).innerHTML = top.map(([n, cnt]) => {
+          const im = MA.includes(Number(n));
+          return `<div class="exp-row"><div class="exp-name">${im ? '⚠️ ' : ''}<span style="color:${im ? 'var(--red)' : 'var(--text)'}">${AM[n] || n + '번'}</span></div><div class="exp-bar-wrap"><div class="exp-fill" style="width:${cnt / mx * 100}%;background:${im ? 'var(--red)' : 'rgba(255,255,255,.25)'}"></div></div><div class="exp-count">${cnt}회</div></div>`;
+        }).join('');
+      }, 100);
+    } catch (e) { allHtml += `<div class="week-card"><div class="week-card-header">${label}</div><div class="empty">⚠️ 데이터 로드 실패: ${e.message}</div></div>`; }
+  }
+  box.innerHTML = allHtml || '<div class="empty">이번 달 급식 정보가 없습니다.</div>';
 }
 
 async function loadWeek(weekNum) {
@@ -607,10 +675,7 @@ function tgA(n, el) {
 function sw(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); btn.classList.add('on');
   ['today', 'stats', 'allergy', 'report'].forEach(t => document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none');
-  if (name === 'stats') {
-    document.querySelectorAll('.week-btn').forEach(b => { b.classList.remove('loaded'); b.textContent = b.id.replace('wb', '') + '주차'; });
-    document.getElementById('stats-box').innerHTML = '<div class="empty">버튼을 누르면 해당 주차 통계를 확인できます.</div>';
-  }
+  if (name === 'stats') loadMonthlyStats();
   if (name === 'report') loadWeeklyReport();
 }
 
