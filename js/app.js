@@ -12,6 +12,7 @@ const DEFAULT_SCHOOL = { ATPT: 'P10', CODE: '8321090', NAME: '상산고등학교
 let currentSchool = { ...DEFAULT_SCHOOL };
 
 const PROXIES = [
+  { url: u => `${location.origin}/api/meal?${u.split('?')[1]}`, parse: async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); const j = await r.json(); if (j.error) throw new Error(j.error); return j; } },
   { url: u => `https://api.codetabs.com/v1/proxy?quest=${u}`, parse: async r => await r.json() },
   { url: u => `https://corsproxy.io/?${u}`, parse: async r => await r.json() },
   { url: u => `https://api.allorigins.win/get?url=${u}`, parse: async r => { const o = await r.json(); return JSON.parse(o.contents); } }
@@ -22,7 +23,7 @@ async function fetchWithProxy(neisUrl) {
   for (const proxy of PROXIES) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
+      const timer = setTimeout(() => controller.abort(), 15000);
       const res = await fetch(proxy.url(neisUrl), { signal: controller.signal });
       clearTimeout(timer);
       if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }

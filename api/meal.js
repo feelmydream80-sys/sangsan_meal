@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  /* CORS 헤더 */
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8,13 +7,9 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  /* 쿼리 파라미터 */
   const params = new URLSearchParams(req.query);
-  
-  /* schoolInfo 또는 mealServiceDietInfo 판단 */
   const type = params.get('type') || '';
   
-  /* 빈 값 파라미터 제거 */
   const filteredParams = new URLSearchParams();
   params.forEach((value, key) => {
     if (key === 'type') return;
@@ -23,34 +18,50 @@ export default async function handler(req, res) {
     }
   });
   
-  /* NEIS API URL 생성 */
   const endpoint = type === 'school' ? 'schoolInfo' : 'mealServiceDietInfo';
   const neisUrl = `https://open.neis.go.kr/hub/${endpoint}?${filteredParams.toString()}`;
   
-  console.log('[DEBUG] NEIS URL:', neisUrl);
+  console.log('[NEIS] URL:', neisUrl);
   
   try {
     const response = await fetch(neisUrl, {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(15000)
+      headers: { 'Accept': 'application/json' }
     });
 
     const status = response.status;
     const text = await response.text();
     
-    console.log('[DEBUG] NEIS Status:', status);
-    console.log('[DEBUG] NEIS Response:', text.substring(0, 500));
+    console.log('[NEIS] Status:', status, 'Length:', text.length);
     
-    if (!response.ok) {
-      return res.status(status).json({ error: 'NEIS API 오류', detail: text });
+    if (!text || text.trim() === '') {
+      console.log('[NEIS] Empty response');
+      return res.status(502).json({ error: 'NEIS empty response' });
     }
 
-    const data = JSON.parse(text);
+    if (!response.ok) {
+      console.log('[NEIS] Error response:', text.substring(0, 200));
+      return res.status(status).json({ error: 'NEIS API error', detail: text.substring(0, 500) });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.log('[NEIS] JSON parse error:', parseErr.message);
+      console.log('[NEIS] Response preview:', text.substring(0, 300));
+      return res.status(502).json({ error: 'JSON parse failed', preview: text.substring(0, 300) });
+    }
+
+    if (data.RESULT?.CODE === 'ERROR') {
+      console.log('[NEIS] API Error:', data.RESULT);
+      return res.status(400).json({ error: data.RESULT });
+    }
+
     res.setHeader('Cache-Control', 's-maxage=1800');
     return res.status(200).json(data);
 
   } catch (e) {
-    console.log('[DEBUG] Error:', e.message);
+    console.log('[NEIS] Fetch error:', e.message);
     return res.status(500).json({ error: e.message });
   }
 }
