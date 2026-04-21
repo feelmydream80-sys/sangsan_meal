@@ -156,13 +156,13 @@ async function doClearCache() {
 function fd(d, s) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0'); return s ? `${y}${s}${m}${s}${dd}` : `${y}${m}${dd}`; }
 function fd2(d) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0'); return `${y}${m}${dd}`; }
 function cd(n) { const c = new Date(document.getElementById('dp').value); c.setDate(c.getDate() + n); document.getElementById('dp').value = fd(c, '-'); loadToday(); }
-function cm(n) { SM += n; if (SM > 12) { SM = 1; SY++; } if (SM < 1) { SM = 12; SY--; } updMD(); }
+function cm(n) { SM += n; if (SM > 12) { SM = 1; SY++; } if (SM < 1) { SM = 12; SY--; } updMD(); document.querySelectorAll('.week-btn').forEach(b => { b.classList.remove('loaded'); b.textContent = b.id.replace('wb', '') + '주차'; }); document.getElementById('stats-box').innerHTML = '<div class="empty">버튼을 누르면 해당 주차 통계를 확인できます.</div>'; }
 function updMD() { document.getElementById('md').textContent = `${SY}년 ${String(SM).padStart(2, '0')}월`; }
 
 function getWeekDates(sy, sm, weekNum) {
   const lastDay = new Date(sy, sm, 0).getDate();
-  const weekStarts = [1, 8, 15, 22];
-  const startDay = weekStarts[weekNum - 1];
+  const weekStarts = weekNum <= 4 ? [1, 8, 15, 22][weekNum - 1] : 29;
+  const startDay = weekStarts;
   const endDay = Math.min(startDay + 6, lastDay);
   const from = `${sy}${String(sm).padStart(2, '0')}${String(startDay).padStart(2, '0')}`;
   const to = `${sy}${String(sm).padStart(2, '0')}${String(endDay).padStart(2, '0')}`;
@@ -172,13 +172,14 @@ function getWeekDates(sy, sm, weekNum) {
 async function loadWeek(weekNum) {
   const box = document.getElementById('stats-box');
   const weekBtn = document.getElementById(`wb${weekNum}`);
+  if (weekBtn.classList.contains('loaded')) { return; }
   weekBtn.disabled = true; weekBtn.textContent = '로딩중...';
   const { from, to, label } = getWeekDates(SY, SM, weekNum);
   try {
     const rows = await fetchRange(from, to);
     const existingCard = document.getElementById(`week-card-${weekNum}`);
-    if (existingCard) existingCard.remove();
-    if (!rows.length) { box.innerHTML += `<div class="week-card" id="week-card-${weekNum}"><div class="empty">${label}: 급식 정보가 없습니다.</div></div>`; weekBtn.disabled = false; weekBtn.textContent = `${weekNum}주차`; return; }
+    if (existingCard) { weekBtn.classList.add('loaded'); weekBtn.disabled = false; weekBtn.textContent = `${weekNum}주차 ✓`; return; }
+    if (!rows.length) { box.innerHTML += `<div class="week-card" id="week-card-${weekNum}"><div class="empty">${label}: 급식 정보가 없습니다.</div></div>`; weekBtn.classList.add('loaded'); weekBtn.disabled = false; weekBtn.textContent = `${weekNum}주차`; return; }
     const byDate = {};
     rows.forEach(r => { if (!byDate[r.MLSV_YMD]) byDate[r.MLSV_YMD] = []; byDate[r.MLSV_YMD].push(r); });
     const dates = Object.keys(byDate).sort();
@@ -243,8 +244,9 @@ async function loadWeek(weekNum) {
     if (existingCard) existingCard.remove();
     box.innerHTML += `<div class="week-card" id="week-card-${weekNum}"><div class="empty">⚠️ ${label} 데이터 로드 실패: ${e.message}</div></div>`;
   }
+  weekBtn.classList.add('loaded');
   weekBtn.disabled = false;
-  weekBtn.textContent = `${weekNum}주차`;
+  weekBtn.textContent = `${weekNum}주차 ✓`;
 }
 
 async function fetchRange(f, t) {
@@ -605,6 +607,10 @@ function tgA(n, el) {
 function sw(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); btn.classList.add('on');
   ['today', 'stats', 'allergy', 'report'].forEach(t => document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none');
+  if (name === 'stats') {
+    document.querySelectorAll('.week-btn').forEach(b => { b.classList.remove('loaded'); b.textContent = b.id.replace('wb', '') + '주차'; });
+    document.getElementById('stats-box').innerHTML = '<div class="empty">버튼을 누르면 해당 주차 통계를 확인できます.</div>';
+  }
   if (name === 'report') loadWeeklyReport();
 }
 
