@@ -33,10 +33,14 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 .ntr-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
 .ntr-bar{height:100%;border-radius:3px;}
 .ntr-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:80px;text-align:right;flex-shrink:0;}
-.month-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.month-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .month-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;}
 .month-btn:hover{color:var(--text);}
 .month-display{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:13px;}
+.week-btn-row{display:flex;gap:8px;margin-bottom:20px;}
+.week-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--green);background:var(--surface);color:var(--green);font-family:'Space Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.week-btn:hover{background:var(--green);color:#000;}
+.week-btn.active{background:var(--green);color:#000;}
 .load-btn{padding:10px 20px;border-radius:8px;background:var(--green);color:#000;border:none;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;}
 .load-btn:hover{filter:brightness(1.1);}
 .load-btn:disabled{opacity:.4;cursor:default;}
@@ -48,6 +52,8 @@ main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:24px 16p
 .stat-sub{font-size:11px;color:var(--muted);font-weight:300;margin-top:6px;}
 .chart-card{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;}
 .chart-title{font-size:15px;font-weight:700;margin-bottom:4px;}
+.week-card{background:rgba(10,10,14,.9);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+.week-card-header{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--yellow);}
 .chart-sub{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:20px;}
 .chart-wrap{position:relative;height:240px;}
 .ntr-freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
