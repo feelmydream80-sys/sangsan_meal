@@ -1,8 +1,9 @@
 const CACHE_NAME = 'sangsan-meal-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  'index.html',
+  'manifest.json',
+  'css/style.css',
+  'js/app.js',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
 ];

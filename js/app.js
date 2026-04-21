@@ -82,7 +82,7 @@ let NK = '', CK = '', MA = [], SY = 2025, SM = 4, CHARTS = {};
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('sw.js')
       .then(r => console.log('SW 등록 완료:', r.scope))
       .catch(e => console.log('SW 등록 실패:', e));
   });
